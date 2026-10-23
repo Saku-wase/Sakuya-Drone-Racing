@@ -1518,7 +1518,6 @@ function startRaceLocal(id) {
   race.goAt = performance.now() + 3000; race.startedAt = performance.now();
   setReady(false); NET.lockUntil = performance.now() + 5000; NET.allSince = 0;
   $('pausemsg').hidden = true;
-  if (mode === 'mouse' && document.pointerLockElement !== canvas) $('clickhint').hidden = false;
 }
 function requestRace() {
   if (!NET.room || !grid || loading) return;
