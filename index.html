@@ -1227,9 +1227,9 @@ window.addEventListener('keydown', (e) => {
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && !ignoreLockLoss && !intro.on && performance.now() - intro.endedAt > 600 && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
 });
-$('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); if (!intro.seen) startIntro(); });
+$('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); });
 
-// ---------- ステージ紹介（はじめて飛ぶときだけ。操作やタイムには影響しない）----------
+// ---------- ステージ紹介（レースが始まるときに流す。スタートの時刻は全員同じ）----------
 const intro = { on: false, seen: false, t: 0, endedAt: -1e9 };
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -1705,10 +1705,11 @@ function netFrame(dt) {
   // レースのカウントダウン
   if (race.state === 'countdown') {
     const left = (race.goAt - now) / 1000;
+    if (intro.on && left <= 3.05) endIntro();     // 処理が重くてムービーが遅れても、最後の3秒は必ずカウントダウンを見せる
     if (left <= 0) {
       race.state = 'running'; race.t0 = S.t; course.lapStart = isRandom() ? S.t : null;
       showBig('START', 900, { k: 'ok', s: 'リングを全部くぐれ' });
-    } else showBig(String(Math.ceil(left)), 0, { k: 'count', s: left > 2 ? 'まもなくスタート' : '' });
+    } else if (!intro.on) showBig(String(Math.ceil(left)), 0, { k: 'count', s: left > 2 ? 'まもなくスタート' : '' });
   }
   boardT -= dt; if (boardT <= 0) { boardT = 0.25; renderBoard(); }
 }
@@ -1744,12 +1745,14 @@ function startRaceLocal(id) {
   if (!grid) return;
   started = true;
   clearTimeout(roundTimer);
-  endIntro(); intro.seen = true;
+  endIntro();
   reset(id);
   race.state = 'countdown'; race.id = id; race.passes = 0; race.fin = null;
-  race.goAt = performance.now() + 3000; race.startedAt = performance.now();
-  setReady(false); NET.lockUntil = performance.now() + 5000; NET.allSince = 0;
+  // ムービーの長さ＋3秒後にスタート（スキップしても スタートの時刻は変わらない）
+  race.goAt = performance.now() + INTRO_LEN * 1000 + 3000; race.startedAt = performance.now();
+  setReady(false); NET.lockUntil = race.goAt + 2000; NET.allSince = 0;
   $('pausemsg').hidden = true;
+  if (!NET.spec) startIntro();
 }
 function requestRace() {
   if (!NET.room || !grid || loading) return;
@@ -1973,7 +1976,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-2000';
+(() => { const B = '20261023-2030';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
