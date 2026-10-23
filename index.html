@@ -239,6 +239,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     <div class="modes" id="modes-start" hidden></div>
     <p class="sub" style="margin-bottom:6px">操作感度</p>
     <div class="modes" id="hpresets-start"></div>
+    <div style="margin:0 0 14px"><label for="sens" style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>向きを変える感度（指でなぞる・左右旋回）</span><b class="num" id="sensval" style="color:var(--accent)">×1.0</b></label>
+    <input type="range" id="sens" min="0.3" max="3" step="0.1" value="1" style="width:100%;accent-color:var(--accent)"></div>
+    <script>(() => { const el = document.getElementById('sens'), out = document.getElementById('sensval'); let v = 1; try { v = parseFloat(localStorage.getItem('drone-sens')) || 1; } catch (e) {}
+      const set = (x) => { window.__sens = x; el.value = x; out.textContent = '×' + Number(x).toFixed(1); try { localStorage.setItem('drone-sens', String(x)); } catch (e) {} };
+      set(v); el.addEventListener('input', () => set(parseFloat(el.value))); })();</script>
     <table id="helptable"></table>
         <div class="row"><button class="go" id="resume" type="button" hidden>続ける</button><button class="go alt" id="ring1" type="button" hidden>直前のリングからやり直す（T）</button><button class="go alt" id="go" type="button" disabled>読み込み中…</button></div>
     <p class="note" style="margin-top:10px">Esc キーでいつでもこのメニューを開けます。</p>
@@ -1022,7 +1027,9 @@ function readInput(dt) {
   const k = (c) => keys.has(c) ? 1 : ((window.__touch && window.__touch[c]) || 0);
   if (window.__touch && window.__touch.on) S.cruise = 1;
   if (mode !== 'mouse') S.cruise = clamp(S.cruise + (k('KeyR') - k('KeyF')) * 0.5 * dt, 0.1, 1);
-  return droneControls(mode, S, P, H, k, aimDir(_d), $('opt-invert').checked, boostHeld && mode === 'mouse', dt);
+  const cc = droneControls(mode, S, P, H, k, aimDir(_d), $('opt-invert').checked, boostHeld && mode === 'mouse', dt);
+  cc.yawRate *= (window.__sens || 1);
+  return cc;
 }
 function renderModeUI() {
   for (const host of [$('modes'), $('modes-start')]) {
@@ -1679,7 +1686,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
   look.addEventListener('pointerdown', (e) => { e.preventDefault(); lid = e.pointerId; lx = e.clientX; ly = e.clientY; try { look.setPointerCapture(lid); } catch (err) {} });
   look.addEventListener('pointermove', (e) => {
     if (e.pointerId !== lid || !window.__aim) return;
-    const s = 0.006, a = window.__aim;
+    const s = 0.006 * (window.__sens || 1), a = window.__aim;
     a.yaw -= (e.clientX - lx) * s; a.pitch = Math.max(-1.45, Math.min(1.45, a.pitch - (e.clientY - ly) * s));
     lx = e.clientX; ly = e.clientY;
   });
