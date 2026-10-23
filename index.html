@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>*{box-sizing:border-box}html,body{margin:0;height:100%}</style></head><body>
-<title>ドローンレース3マップ</title>
+<style>*{box-sizing:border-box}html,body{margin:0;height:100%}#panel{display:none!important}</style></head><body>
+<title>砂漠ドローンレース</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Share+Tech+Mono&display=swap">
@@ -224,16 +224,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <div id="overlay">
   <div class="card">
     <h1>ドローンレース</h1>
-    <p class="sub" style="margin-bottom:6px">マップを選んでください</p>
-    <div class="modes maps" id="maps-start"></div>
+    <div class="modes maps" id="maps-start" hidden></div>
     <p class="sub" id="mapdesc"></p>
     <p class="msg" id="crashmsg" hidden></p>
     <p class="chip info" id="pausemsg" hidden style="display:inline-block;margin:0 0 12px">一時停止中</p>
     <div id="netbox" hidden>
       <p class="sub" style="margin:0 0 8px"><strong>みんなでレース</strong>　<span id="netcount"></span></p>
-      <div class="row"><label class="note" for="nick" style="margin:0">表示名</label><input id="nick" maxlength="16" placeholder="アカウント名を使う"><button class="go alt" id="readybtn-start" type="button" aria-pressed="false">準備OK（G）</button></div>
+      <div class="row"><label class="note" for="nick" style="margin:0">表示名</label><input id="nick" maxlength="16" placeholder="名前を入力"><button class="go alt" id="readybtn-start" type="button" aria-pressed="false">準備OK（G）</button></div>
       <p class="note num" id="readystat" style="margin:8px 0 0;color:var(--accent)"></p>
-      <p class="note" style="margin:6px 0 0">同じマップにいる全員が「準備OK」を押すと、全員がスタート地点に戻って3秒のカウントダウンでスタート。1周のタイムを競います。飛びながら G キーでも押せます。ほかの人は半透明のドローンで見えます（ぶつかりません）。</p>
+      <p class="note" style="margin:6px 0 0">同じマップにいる全員が「準備OK」を押すと、全員がスタート地点に戻って3秒のカウントダウンでスタート。10個のリングを全部集めるタイムを競います。飛びながら G キーでも押せます。ほかの人は半透明のドローンで見えます（ぶつかりません）。</p>
       <p class="note" id="netmsg" style="margin:4px 0 0;color:var(--bad)"></p>
       <p class="note" id="roominfo" hidden style="margin:6px 0 0">部屋: <b id="roomname"></b>（<span id="netstate">接続しています…</span>）　URLの最後に <b>?room=好きな名前</b> を付けると、仲間内だけの部屋になります。位置と表示名は公開の中継サーバーを通ります。</p>
     </div>
@@ -251,7 +250,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
 // 当たり判定: 三角形を一様グリッドに入れ、点との最短距離を求める
@@ -401,6 +399,7 @@ const MAPS = {
   },
 };
 const RING_R = 1.2;
+for (const k of Object.keys(MAPS)) if (k !== 'desert') delete MAPS[k];
 
 // ==== ドローンの飛行モデル（第2版） ====
 // 調べた内容を元にした設計:
@@ -632,25 +631,25 @@ function makeMqttRoom(opts) {
 'use strict';
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-let mapId = 'cathedral';
+let mapId = 'desert';
 try { const m = (location.hash || '').slice(1) || localStorage.getItem('drone3-map'); if (MAPS[m]) mapId = m; } catch (e) {}
 let MAP = MAPS[mapId];
 
 // ---------- three.js ----------
 const canvas = $('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = false; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const FOG = new THREE.Color(0xc8d8e4);
 scene.fog = new THREE.Fog(FOG, 90, 260);
 const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 1500);
-try { const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), 0.04).texture; } catch (e) {}
+
 const hemi = new THREE.HemisphereLight(0xdfeaf5, 0x6b6153, 0.4); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff1dc, 1.7);
-sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+sun.castShadow = false; sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
 scene.add(sun); scene.add(sun.target);
 const skyTop = new THREE.Color(0x5d97cf);
