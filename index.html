@@ -236,8 +236,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
       <p class="note" id="netmsg" style="margin:4px 0 0;color:var(--bad)"></p>
       <p class="note" id="roominfo" hidden style="margin:6px 0 0">部屋: <b id="roomname"></b>（<span id="netstate">接続しています…</span>）　URLの最後に <b>?room=好きな名前</b> を付けると、仲間内だけの部屋になります。位置と表示名は公開の中継サーバーを通ります。</p>
     </div>
-    <p class="sub" style="margin-bottom:6px">操作方式を選んでください</p>
-    <div class="modes" id="modes-start"></div>
+    <div class="modes" id="modes-start" hidden></div>
     <p class="sub" style="margin-bottom:6px">操作感度</p>
     <div class="modes" id="hpresets-start"></div>
     <table id="helptable"></table>
@@ -1006,7 +1005,7 @@ const MODES = {
   manual: { name: 'マニュアル', tag: '実機のアングルモード', help: [['W / S（または ↑ ↓）', '前後に傾ける（前進・後退）'], ['A / D（または ← →）', '左右に傾ける（横移動）'], ['Q / E', '機首の向きを回す'], ['Space / Shift', '上昇・下降'], ['キーを離す', '水平に戻る（慣性で少し流れる）']] },
 };
 let mode = 'mouse';
-try { const m = localStorage.getItem('cath-mode'); if (MODES[m]) mode = m; } catch (e) {}
+
 const aim = { yaw: 0, pitch: 0 };
 canvas.addEventListener('mousemove', (e) => {
   if (mode !== 'mouse' || !$('overlay').hidden) return;
