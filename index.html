@@ -138,7 +138,36 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #players td i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 #players td.num{color:var(--accent)}
 #players .oth{color:var(--ink-dim);font-size:11px;margin-top:4px}
-#big{top:34%;left:50%;transform:translate(-50%,-50%);font-family:var(--f-num);font-size:min(18vw,120px);color:var(--accent);text-shadow:0 3px 12px rgba(0,0,0,.6);white-space:nowrap}
+#big{top:36%;left:50%;transform:translate(-50%,-50%);text-align:center;padding:9px 22px 11px;background:rgba(12,18,24,.74);border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:8px;backdrop-filter:blur(6px);min-width:180px;max-width:calc(100vw - 32px);animation:bigIn .2s ease-out}
+#big .t{font-weight:700;font-size:clamp(17px,2.6vw,22px);letter-spacing:.12em;color:var(--accent)}
+#big .v{font-family:var(--f-num);font-size:clamp(20px,3.4vw,28px);color:var(--ink);margin-top:1px}
+#big .s{margin-top:3px;font-size:clamp(11.5px,1.6vw,13px);color:var(--ink-dim);letter-spacing:.04em}
+#big[data-k="bad"]{border-top-color:var(--bad)} #big[data-k="bad"] .t{color:var(--bad)}
+#big[data-k="ok"]{border-top-color:var(--ok)} #big[data-k="ok"] .t{color:var(--ok)}
+#big[data-k="info"]{border-top-color:var(--gauge)} #big[data-k="info"] .t{color:var(--gauge)}
+#big[data-k="count"]{background:none;border:none;backdrop-filter:none;padding:0;min-width:0;animation:none}
+#big[data-k="count"] .t{font-family:var(--f-num);font-weight:400;font-size:clamp(40px,8vw,64px);letter-spacing:0;color:var(--accent);text-shadow:0 2px 10px rgba(0,0,0,.65)}
+#big[data-k="count"] .s{color:var(--ink);text-shadow:0 1px 3px #000}
+@keyframes bigIn{from{opacity:0;margin-top:8px}}
+#intro{position:fixed;inset:0;z-index:6;pointer-events:auto;cursor:pointer;color:var(--ink)}
+#intro .lb{position:absolute;left:0;right:0;height:7vh;background:#05080b}
+#intro .lb.t{top:0} #intro .lb.b{bottom:0}
+#intro .cap{position:absolute;left:0;top:7vh;padding:14px 60px 14px max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:2px;text-shadow:0 1px 4px rgba(0,0,0,.8);background:linear-gradient(90deg,rgba(5,8,11,.62),rgba(5,8,11,.35) 70%,transparent)}
+#intro .cap small{font-family:var(--f-num);font-size:11px;letter-spacing:.2em;color:var(--accent)}
+#intro .cap b{font-size:clamp(18px,3vw,26px);letter-spacing:.08em}
+#intro .cap span{font-size:12px;color:var(--ink);opacity:.85}
+#intro .rules{position:absolute;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(7vh + 14px);width:min(360px,calc(100vw - 40px));padding:12px 14px;background:rgba(12,18,24,.8);border:1px solid var(--line);border-radius:8px;backdrop-filter:blur(6px);cursor:default}
+#intro .rules h4{margin:0 0 6px;font-size:12px;letter-spacing:.16em;color:var(--accent);font-weight:700}
+#intro .rules ol{margin:0;padding-left:1.3em;font-size:13px;line-height:1.6}
+#intro .rules em{font-style:normal;color:var(--accent);font-weight:700}
+#intro .rules .ctl{margin:8px 0 0;padding-top:7px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-dim);line-height:1.5}
+#intro .skip{position:absolute;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(7vh + 14px);background:rgba(12,18,24,.7);font-size:12px;padding:6px 12px}
+#intro .bar{position:absolute;left:0;right:0;bottom:7vh;height:2px;background:rgba(255,255,255,.12)}
+#intro .bar i{display:block;height:100%;width:0;background:var(--accent)}
+#ifade{position:fixed;inset:0;z-index:5;background:#05080b;opacity:0;pointer-events:none}
+body.intro .hud,body.intro #touchui,body.intro #panel{visibility:hidden!important}
+@media (max-height:460px){#intro .lb{height:4vh}#intro .cap{top:4vh;padding-top:8px;padding-bottom:8px}#intro .rules{bottom:calc(4vh + 8px);padding:8px 12px}#intro .rules ol{font-size:12px;line-height:1.45}#intro .skip{bottom:calc(4vh + 8px)}#intro .bar{bottom:4vh}}
+@media (max-width:560px){#intro .skip{top:calc(7vh + 14px);bottom:auto;left:auto;right:max(20px,env(safe-area-inset-right,0px))}}
 #clickhint{top:56%;left:50%;transform:translateX(-50%);padding:8px 14px;font-weight:700}
 #netbox{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 14px}
 #netbox .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -162,6 +191,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <div class="hud box" id="keys"></div>
 <div class="hud box" id="players" hidden><div class="ttl" id="board-title"></div><table><tbody id="board"></tbody></table><div class="oth" id="board-other"></div></div>
 <div class="hud" id="big" hidden></div>
+<div id="ifade"></div>
+<div id="intro" hidden>
+  <div class="lb t"></div><div class="lb b"></div>
+  <div class="cap"><small id="intro-no">STAGE</small><b id="intro-ttl">砂漠の町</b><span id="intro-sub"></span></div>
+  <div class="rules" id="intro-rules">
+    <h4>ルール</h4>
+    <ol>
+      <li>町に浮かぶ <em>10個のリング</em> を全部くぐればゴール</li>
+      <li>順番は自由。どの向きからくぐってもOK</li>
+      <li>建物の中や屋根の下にもリングがあります</li>
+      <li>ぶつかると直前のリングから再スタート</li>
+    </ol>
+    <p class="ctl" id="intro-ctl"></p>
+  </div>
+  <button type="button" class="skip" id="intro-skip">スキップ</button>
+  <div class="bar"><i id="intro-bar"></i></div>
+</div>
 <div class="hud box" id="specbar" hidden style="top:calc(104px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:6px 8px 6px 12px;pointer-events:auto;z-index:6;display:flex;gap:10px;align-items:center;font-size:12px;white-space:nowrap"><span id="spectext"></span><button type="button" id="specnext">次の人（V）</button></div>
 <div class="hud box" id="clickhint" hidden>画面をクリックすると操作できます</div>
 <div class="hud" id="ar" hidden data-off="0"><i id="ar-arrow"></i><span id="ar-label"></span></div>
@@ -1140,14 +1186,76 @@ $('resume').addEventListener('click', resume);
 $('ring1').addEventListener('click', () => { restartAtCheckpoint(); lockMouse(); });
 window.addEventListener('keydown', (e) => {
   if (e.code !== 'Escape') return;
-  e.preventDefault();
+  e.preventDefault(); if (intro.on || performance.now() - intro.endedAt < 300) return;
   if ($('overlay').hidden) openMenu();
   else if (started && !S.crashed && performance.now() - menuOpenedAt > 350) resume();
 });
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement && !ignoreLockLoss && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
+  if (!document.pointerLockElement && !ignoreLockLoss && !intro.on && performance.now() - intro.endedAt > 600 && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
 });
-$('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); });
+$('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); if (!intro.seen) startIntro(); });
+
+// ---------- ステージ紹介（はじめて飛ぶときだけ。操作やタイムには影響しない）----------
+const intro = { on: false, seen: false, t: 0, endedAt: -1e9 };
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+// 各カット: 長さ(秒)・見出し・カメラの位置と注視点（t=0〜1）
+const SHOTS = [
+  { d: 4.6, no: 'OVERVIEW', ttl: '砂漠の町', sub: 'リングの位置は毎回ランダム',
+    cam(t, p, l) { const a = 2.35 + t * 0.95, r = 120 - t * 18; p.set(-2 + Math.sin(a) * r, 62 - t * 14, 15 + Math.cos(a) * r); l.set(-2, -8, 15); } },
+  { d: 3.0, no: 'STREET', ttl: 'メインストリート', sub: '建物のすき間を抜けていこう',
+    cam(t, p, l) { const e = ease(t); p.set(0.5, -3.2 + e * 1.2, 60 - e * 30); l.set(0.5, -3.5, p.z - 20); } },
+  { d: 3.0, no: 'TEMPLE', ttl: '神殿エリア', sub: '回廊や建物の中にもリングがある',
+    cam(t, p, l) { const e = ease(t); p.set(24, 5 + e * 2.5, -18 - e * 5); l.set(24, -1, -45); } },
+  { d: 3.0, no: 'AVENUE', ttl: '大通り', sub: '速度を上げて一気に駆け抜けよう',
+    cam(t, p, l) { const e = ease(t); p.set(32 - e * 46, -1 - e * 1.5, 26.5); l.set(p.x - 18, -3.5, 26.5); } },
+  { d: 2.6, no: 'START', ttl: 'スタート地点', sub: '',
+    cam(t, p, l) {
+      const e = ease(t), dir = aimDir(_d).clone();
+      const end = S.pos.clone().addScaledVector(dir, -H.camDist); end.y += H.camHeight;
+      const beg = S.pos.clone().addScaledVector(dir, -7).add(V3(dir.z, 0, -dir.x).multiplyScalar(4)); beg.y += 3.5;
+      p.copy(beg).lerp(end, e);
+      const lend = S.pos.clone().addScaledVector(dir, 12); lend.y += H.camHeight * 0.4;
+      l.copy(S.pos).lerp(lend, e * e);
+    } },
+];
+const INTRO_LEN = SHOTS.reduce((a, b) => a + b.d, 0);
+let introShot = -1;
+function startIntro() {
+  intro.on = true; intro.seen = true; intro.t = 0; introShot = -1;
+  $('intro-ctl').textContent = window.__isTouch
+    ? '操作：画面をなぞって向きを変える／左のレバーでスピード（上で前進）'
+    : '操作：マウスで向き／W・S 前進・後退／Space・Shift 上下／ホイールでスピード';
+  $('intro-skip').textContent = window.__isTouch ? 'タップでスキップ' : 'スキップ（Space / クリック）';
+  $('intro').hidden = false; document.body.classList.add('intro');
+}
+function endIntro() {
+  if (!intro.on) return;
+  intro.on = false; intro.endedAt = performance.now();
+  $('intro').hidden = true; $('ifade').style.opacity = 0; document.body.classList.remove('intro');
+  camInit = false; fpvInit = false; syncAimToPlane(); keys.clear(); boostHeld = false;
+  if (started && !NET.spec && race.state !== 'countdown') showBig('READY', 1600, { k: 'ok', s: window.__isTouch ? 'レバーを上に倒して発進' : 'W で発進' });
+}
+function introCamera(dt) {
+  if (!intro.hold) intro.t += dt;
+  if (intro.t >= INTRO_LEN) { endIntro(); return false; }
+  let t = intro.t, i = 0; while (i < SHOTS.length - 1 && t >= SHOTS[i].d) { t -= SHOTS[i].d; i++; }
+  const sh = SHOTS[i], u = Math.min(1, t / sh.d);
+  if (i !== introShot) { introShot = i; $('intro-no').textContent = String(i + 1).padStart(2, '0') + ' / ' + SHOTS.length + '　' + sh.no; $('intro-ttl').textContent = sh.ttl; $('intro-sub').textContent = sh.sub; }
+  sh.cam(u, camera.position, look);
+  camera.up.set(0, 1, 0); camera.lookAt(look); camera.fov = 58;
+  // カットの切り替わりで暗転（最後のカットの終わりはそのまま操作画面へつなぐ）
+  const fin = Math.min(1, t / 0.3), fout = i < SHOTS.length - 1 ? Math.min(1, (sh.d - t) / 0.3) : 1;
+  $('ifade').style.opacity = (i === 0 ? 1 - Math.min(1, t / 0.6) : 1 - Math.min(fin, fout)).toFixed(3);
+  $('intro-bar').style.width = (intro.t / INTRO_LEN * 100).toFixed(1) + '%';
+  return true;
+}
+$('intro').addEventListener('pointerdown', (e) => { if (e.target.closest && e.target.closest('#intro-rules')) return; e.preventDefault(); endIntro(); });
+canvas.addEventListener('mousedown', () => { if (intro.on) endIntro(); }, true);
+window.addEventListener('keydown', (e) => {
+  if (!intro.on) return;
+  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); endIntro(); }
+}, true);
 function setView(v) { camMode = v; fpvInit = false; document.querySelectorAll('#views button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === v))); }
 CAM_NAMES.forEach((n, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.addEventListener('click', () => { setView(i); b.blur(); }); $('views').appendChild(b); });
 setView(0); renderModeUI();
@@ -1172,7 +1280,7 @@ function updateCourse() {
         const lap = S.t - course.lapStart;
         if (course.best == null || lap < course.best) { course.best = lap; try { localStorage.setItem(bestKey(), String(lap)); } catch (e) {} }
         if (race.state === 'off') {
-          showBig('全部回収！ ' + fmtTime(lap), 2500);
+          showBig('COMPLETE', 3000, { k: 'ok', v: fmtTime(lap), s: '10個すべて通過　新しい配置で続けられます' });
           clearTimeout(roundTimer);
           roundTimer = setTimeout(() => { if (race.state !== 'off' || !isRandom()) return; buildRings(); course.lapStart = S.t; course.last = null; }, 2500);
         }
@@ -1288,7 +1396,7 @@ window.addEventListener('resize', resize); resize();
 const DT = 1 / 240; let acc = 0, last = performance.now(), spin = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (grid && $('overlay').hidden && started && race.state !== 'countdown' && !NET.spec) {
+  if (grid && $('overlay').hidden && started && race.state !== 'countdown' && !NET.spec && !intro.on) {
     const c = readInput(dt);
     acc += dt;
     while (acc >= DT) { stepDrone(S, P, H, c, DT, grid, MAP.bound, MAP.groundY); acc -= DT; }
@@ -1298,8 +1406,8 @@ function frame(now) {
   hitTimer -= dt; $('hitwarn').hidden = hitTimer <= 0 || camMode === 1;
   if (S.crashed && !crashShown) {
     crashShown = true;
-    $('crashmsg').textContent = '墜落：' + S.crashed; $('crashmsg').hidden = false; $('go').textContent = 'ニューゲーム';
-    showBig('墜落！ 前のリングから再開', 1200);
+    $('crashmsg').textContent = 'クラッシュ：' + S.crashed; $('crashmsg').hidden = false; $('go').textContent = 'ニューゲーム';
+    showBig('CRASH', 1300, { k: 'bad', s: '直前のリングから再スタート' });
     setTimeout(() => { if (!S.crashed) return; restartAtCheckpoint(); }, 1200);
   }
 
@@ -1349,7 +1457,8 @@ function frame(now) {
     camera.position.copy(best); camera.up.set(0, 1, 0); camera.lookAt(S.pos);
     camera.fov = clamp(60 - best.distanceTo(S.pos) * 0.9, 12, 60);
   }
-  camera.fov += clamp((S.tele.V - 4) / 12, 0, 1) * H.speedFov;
+  if (intro.on && introCamera(dt)) { if (droneModel) droneModel.visible = true; }
+  else camera.fov += clamp((S.tele.V - 4) / 12, 0, 1) * H.speedFov;
   updateSpeedLines();
   camera.aspect = baseAspect * (inFpv ? H.cockpitWide : 1);
   camera.updateProjectionMatrix();
@@ -1521,16 +1630,25 @@ function netFrame(dt) {
     const left = (race.goAt - now) / 1000;
     if (left <= 0) {
       race.state = 'running'; race.t0 = S.t; course.lapStart = isRandom() ? S.t : null;
-      showBig('GO!', 700);
-    } else showBig(String(Math.ceil(left)), 0);
+      showBig('START', 900, { k: 'ok', s: 'リングを全部くぐれ' });
+    } else showBig(String(Math.ceil(left)), 0, { k: 'count', s: left > 2 ? 'まもなくスタート' : '' });
   }
   boardT -= dt; if (boardT <= 0) { boardT = 0.25; renderBoard(); }
 }
 
 // 大きな文字（カウントダウン・ゴール）
-let bigTimer = null;
-function showBig(text, ms) {
-  const el = $('big'); el.textContent = text; el.hidden = false;
+let bigTimer = null, bigKey = '';
+// title: 見出し / o.v: 大きめの数字 / o.s: 補足 / o.k: 色（bad ok info count）
+function showBig(title, ms, o) {
+  o = o || {};
+  const el = $('big'), key = title + '|' + (o.v || '') + '|' + (o.s || '') + '|' + (o.k || '');
+  if (key !== bigKey || el.hidden) {
+    bigKey = key; el.dataset.k = o.k || '';
+    el.innerHTML = '';
+    const add = (cls, t) => { if (!t) return; const d = document.createElement('div'); d.className = cls; d.textContent = t; el.appendChild(d); };
+    add('t', title); add('v', o.v); add('s', o.s);
+    el.hidden = true; void el.offsetWidth; el.hidden = false;   // 出てくる動きをやり直す
+  }
   clearTimeout(bigTimer); if (ms) bigTimer = setTimeout(() => { el.hidden = true; }, ms);
 }
 
@@ -1540,7 +1658,7 @@ function onRingPass(idx) {
   race.passes++;
   if (isRandom() ? race.passes >= rings.length : race.passes > rings.length) {     // ランダムは全部集めたら、コースは1番に戻ったらゴール
     race.fin = S.t - race.t0; race.state = 'done';
-    showBig('GOAL  ' + fmtTime(race.fin), 3500);
+    showBig('FINISH', 4000, { k: 'ok', v: fmtTime(race.fin), s: '全リング通過' });
   }
 }
 
@@ -1549,6 +1667,7 @@ function startRaceLocal(id) {
   if (!grid) return;
   started = true;
   clearTimeout(roundTimer);
+  endIntro(); intro.seen = true;
   reset(id);
   race.state = 'countdown'; race.id = id; race.passes = 0; race.fin = null;
   race.goAt = performance.now() + 3000; race.startedAt = performance.now();
@@ -1582,8 +1701,8 @@ function checkReady(list) {
 function onSpecChange(was) {
   $('specbar').hidden = !NET.spec;
   if (ringGroup) ringGroup.visible = !NET.spec;
-  if (NET.spec) { NET.specIdx = 0; fpvInit = false; camInit = false; showBig('レース中なので観戦します', 2000); }
-  else if (was) { if (started) reset(); if (ringGroup) ringGroup.visible = true; showBig('レース終了！ 準備OKで次のレースに参加できます', 3000); }
+  if (NET.spec) { NET.specIdx = 0; fpvInit = false; camInit = false; endIntro(); showBig('観戦モード', 2600, { k: 'info', s: 'レース中のため、次のレースから参加します' }); }
+  else if (was) { if (started) reset(); if (ringGroup) ringGroup.visible = true; showBig('レース終了', 3200, { k: 'info', s: '「準備OK」で次のレースに参加できます' }); }
 }
 const _sf = new THREE.Vector3();
 function specFollow(dt) {
@@ -1776,7 +1895,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-1530';
+(() => { const B = '20261023-1900';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
