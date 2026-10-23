@@ -1040,7 +1040,7 @@ canvas.addEventListener('mousemove', (e) => {
   if (!$('overlay').hidden) return;
   // キーボード操作中もマウスで左右の向きを変えられる（画面をクリックしてマウスを固定、またはドラッグ）
   if (mode !== 'mouse') { if (document.pointerLockElement === canvas || (e.buttons & 1)) S.yaw -= (e.movementX || 0) * 0.0022 * H.sens * (window.__sens || 1); return; }
-  const sens = 0.0022 * H.sens;
+  const sens = 0.0022 * H.sens * (window.__sens || 1);
   aim.yaw -= (e.movementX || 0) * sens;
   aim.pitch = clamp(aim.pitch - (e.movementY || 0) * sens, -1.45, 1.45);
 });
