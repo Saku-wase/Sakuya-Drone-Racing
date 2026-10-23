@@ -1029,7 +1029,7 @@ canvas.addEventListener('wheel', (e) => { if (!started || !$('overlay').hidden) 
 
 const MODES = {
   mouse: { name: 'マウス＋WASD', tag: 'おすすめ', help: [['マウス', '向きを変える（見ている方向へ進む）'], ['W / S', '前進・後退'], ['A / D', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['ホイール', 'スピード設定を変える'], ['左クリック（長押し）', 'ブースト'], ['キーを離す', 'その場で止まってホバリング']] },
-  easy: { name: 'キーボードのみ', tag: 'マウス不要', help: [['W / S（または ↑ ↓）', '前進・後退'], ['A / D（または ← →）', '左右に旋回'], ['Q / E', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['R / F', 'スピード設定を上げる・下げる'], ['キーを離す', 'その場で止まってホバリング']] },
+  easy: { name: 'キーボードのみ', tag: 'マウス不要', help: [['マウス（画面をクリック）', '左右の向きを変える'], ['W / S（または ↑ ↓）', '前進・後退'], ['A / D（または ← →）', '左右に旋回'], ['Q / E', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['R / F', 'スピード設定を上げる・下げる'], ['キーを離す', 'その場で止まってホバリング']] },
   manual: { name: 'マニュアル', tag: '実機のアングルモード', help: [['W / S（または ↑ ↓）', '前後に傾ける（前進・後退）'], ['A / D（または ← →）', '左右に傾ける（横移動）'], ['Q / E', '機首の向きを回す'], ['Space / Shift', '上昇・下降'], ['キーを離す', '水平に戻る（慣性で少し流れる）']] },
 };
 window.__isTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && matchMedia('(pointer: coarse)').matches; window.__touch = window.__touch || {};
@@ -1037,12 +1037,14 @@ let mode = window.__isTouch ? 'mouse' : 'easy';
 
 const aim = { yaw: 0, pitch: 0 }; window.__aim = aim;
 canvas.addEventListener('mousemove', (e) => {
-  if (mode !== 'mouse' || !$('overlay').hidden) return;
+  if (!$('overlay').hidden) return;
+  // キーボード操作中もマウスで左右の向きを変えられる（画面をクリックしてマウスを固定、またはドラッグ）
+  if (mode !== 'mouse') { if (document.pointerLockElement === canvas || (e.buttons & 1)) S.yaw -= (e.movementX || 0) * 0.0022 * H.sens * (window.__sens || 1); return; }
   const sens = 0.0022 * H.sens;
   aim.yaw -= (e.movementX || 0) * sens;
   aim.pitch = clamp(aim.pitch - (e.movementY || 0) * sens, -1.45, 1.45);
 });
-canvas.addEventListener('click', () => { if (mode === 'mouse' && document.pointerLockElement !== canvas) lockMouse(); });
+canvas.addEventListener('click', () => { if ((mode === 'mouse' || !window.__isTouch) && document.pointerLockElement !== canvas) lockMouse(); });
 const _d = new THREE.Vector3();
 function aimDir(out) { return out.set(-Math.sin(aim.yaw) * Math.cos(aim.pitch), Math.sin(aim.pitch), -Math.cos(aim.yaw) * Math.cos(aim.pitch)); }
 function syncAimToPlane() { aim.yaw = S.yaw; aim.pitch = -0.08; }
@@ -1118,7 +1120,7 @@ function restartAtCheckpoint() {
 // ---------- メニュー（Esc）----------
 let started = false, menuOpenedAt = 0, ignoreLockLoss = false, crashShown = false;
 function releaseLock() { if (document.pointerLockElement) { ignoreLockLoss = true; try { document.exitPointerLock(); } catch (e) {} setTimeout(() => { ignoreLockLoss = false; }, 300); } }
-function lockMouse() { if (mode === 'mouse') { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } }
+function lockMouse() { if (mode === 'mouse' || !window.__isTouch) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } }
 function openMenu() {
   if (!$('overlay').hidden) return;
   menuOpenedAt = performance.now();
@@ -1142,7 +1144,7 @@ window.addEventListener('keydown', (e) => {
   else if (started && !S.crashed && performance.now() - menuOpenedAt > 350) resume();
 });
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement && !ignoreLockLoss && started && !S.crashed && $('overlay').hidden && mode === 'mouse') openMenu();
+  if (!document.pointerLockElement && !ignoreLockLoss && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
 });
 $('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); });
 function setView(v) { camMode = v; fpvInit = false; document.querySelectorAll('#views button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === v))); }
