@@ -644,7 +644,7 @@ renderer.shadowMap.enabled = false; renderer.shadowMap.type = THREE.PCFSoftShado
 const scene = new THREE.Scene();
 const FOG = new THREE.Color(0xc8d8e4);
 scene.fog = new THREE.Fog(FOG, 90, 260);
-const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 1500);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 450);
 
 const hemi = new THREE.HemisphereLight(0xdfeaf5, 0x6b6153, 0.4); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff1dc, 1.7);
@@ -659,7 +659,7 @@ const skyTop = new THREE.Color(0x5d97cf);
     vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
     fragmentShader: 'uniform vec3 top; uniform vec3 hor; varying vec3 vP; void main(){ float t = pow(clamp(vP.y,0.0,1.0),0.5); gl_FragColor = vec4(mix(hor, top, t),1.0); }',
   });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(1200, 32, 16), m); sky.renderOrder = -1; scene.add(sky); scene.userData.sky = sky;
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(420, 32, 16), m); sky.renderOrder = -1; scene.add(sky); scene.userData.sky = sky;
 }
 // マップごとの空・霧・太陽
 function applyLook() {
@@ -774,19 +774,19 @@ function buildCathedral(group, cj) {
 function buildMeshMap(group, data) {
   const parts = decodeMap(data, MAP.offset);
   const s = MAP.scale || 1;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: MAP.groundColor, roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = MAP.groundY - 0.05; ground.receiveShadow = true; group.add(ground);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: MAP.groundColor }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = MAP.groundY - 0.05; group.add(ground);
   for (const p of parts) {
     if (s !== 1) for (let i = 0; i < p.P.length; i++) p.P[i] *= s;
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p.P, 3));
-    if (p.UV) geo.setAttribute('uv', new THREE.BufferAttribute(p.UV, 2));
-    geo.setIndex(new THREE.BufferAttribute(p.IDX, 1));
     const c = p.g.color, opt = { color: new THREE.Color(c[0], c[1], c[2]), side: THREE.DoubleSide };
     if (p.g.tex) { const t = texLoader.load(p.g.tex); t.encoding = THREE.sRGBEncoding; t.flipY = false; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; opt.map = t; }
-    let mesh;
-    if (MAP.unlit) mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial(opt));
-    else { mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign(opt, { roughness: 0.9, flatShading: true }))); mesh.castShadow = true; mesh.receiveShadow = true; }
-    group.add(mesh);
+    const mat = MAP.unlit ? new THREE.MeshBasicMaterial(opt) : new THREE.MeshLambertMaterial(opt);
+    // 頂点を三角形ごとに分けて、面ごとの法線を前もって計算する（光の計算を軽くし、角ばった見た目は保つ）
+    const n = p.IDX.length / 3, pos = new Float32Array(n * 9), uv = p.UV ? new Float32Array(n * 6) : null;
+    for (let o = 0; o < n * 3; o++) { const v = p.IDX[o]; pos[o * 3] = p.P[v * 3]; pos[o * 3 + 1] = p.P[v * 3 + 1]; pos[o * 3 + 2] = p.P[v * 3 + 2]; if (uv) { uv[o * 2] = p.UV[v * 2]; uv[o * 2 + 1] = p.UV[v * 2 + 1]; } }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); if (uv) geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    if (!MAP.unlit) geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, mat); mesh.matrixAutoUpdate = false; group.add(mesh);
   }
   return mapTriangles(parts);
 }
@@ -1365,6 +1365,16 @@ function frame(now) {
   netFrame(dt);
   hudTimer -= dt; if (hudTimer <= 0) { hudTimer = 0.1; updateHud(); }
   renderer.render(scene, camera);
+  {
+    const P = frame.pf || (frame.pf = { n: 0, t0: now, last: now, cap: renderer.getPixelRatio(), pr: renderer.getPixelRatio() });
+    if (!$('overlay').hidden || now - P.last > 250) { P.t0 = now; P.n = 0; }
+    P.last = now; P.n++;
+    if (now - P.t0 > 2500) {
+      const ms = (now - P.t0) / P.n; P.t0 = now; P.n = 0;
+      if (ms > 24 && P.pr > 0.6) { P.pr = Math.max(0.6, P.pr - 0.15); renderer.setPixelRatio(P.pr); }
+      else if (ms < 14 && P.pr < P.cap) { P.pr = Math.min(P.cap, P.pr + 0.1); renderer.setPixelRatio(P.pr); }
+    }
+  }
   requestAnimationFrame(frame);
 }
 // ---------- みんなでレース（リンクを開いている人どうし）----------
@@ -1640,13 +1650,13 @@ requestAnimationFrame(frame);
 body.touch #touchui{display:block}
 body.touch #gauges,body.touch #keys{display:none}
 #tlook{position:absolute;inset:0;pointer-events:auto;touch-action:none}
-.tlever{position:absolute;left:max(22px,env(safe-area-inset-left,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:76px;height:180px;border-radius:38px;background:rgba(16,24,32,.38);border:2px solid rgba(232,238,241,.35);pointer-events:auto;touch-action:none}
+.tlever{position:absolute;left:max(22px,env(safe-area-inset-left,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:80px;height:min(64vh,360px);border-radius:40px;background:rgba(16,24,32,.38);border:2px solid rgba(232,238,241,.35);pointer-events:auto;touch-action:none}
 .tlever i{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:rgba(255,200,87,.8);box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .tlever b{position:absolute;left:-20px;right:-20px;top:-22px;text-align:center;font-size:11px;color:#e8eef1;text-shadow:0 1px 2px #000;font-weight:500}
 .tlever s{position:absolute;left:0;right:0;text-align:center;font-size:10px;color:#e8eef1;opacity:.7;text-decoration:none}
 .tbtns{position:absolute;top:50%;transform:translateY(-75%);right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;pointer-events:auto}
 .tbtns button{width:56px;height:44px;padding:0;font-size:12px;font-weight:700;background:rgba(16,24,32,.7);color:#e8eef1;border:1px solid rgba(160,190,205,.35);border-radius:8px;touch-action:none}
-@media (max-height:420px){.tlever{height:150px}}
+
 body.touch #overlay{place-items:start center;padding-top:12px;padding-bottom:12px}
 body.touch #course{top:calc(8px + env(safe-area-inset-top,0px));padding:4px 10px;gap:10px}
 body.touch #course .num{font-size:15px}
@@ -1678,7 +1688,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
   look.addEventListener('pointerup', lend); look.addEventListener('pointercancel', lend);
   // 左のレバー: 上に倒すほど速く前進、下で後退。離すとその場で止まる
   const lever = document.getElementById('tlever'), knob = lever.querySelector('i'); let vid = null;
-  const setV = (y) => { knob.style.transform = `translateY(${y * (lever.clientHeight / 2 - 32)}px)`; const v = Math.abs(y) < 0.1 ? 0 : (Math.abs(y) - 0.1) / 0.9; T.KeyW = y < 0 ? v : 0; T.KeyS = y > 0 ? v : 0; };
+  const setV = (y) => { knob.style.transform = `translateY(${y * (lever.clientHeight / 2 - 32)}px)`; const v = Math.abs(y) < 0.05 ? 0 : Math.pow((Math.abs(y) - 0.05) / 0.95, 1.6); T.KeyW = y < 0 ? v : 0; T.KeyS = y > 0 ? v : 0; };
   const moveV = (e) => { const r = lever.getBoundingClientRect(); setV(Math.max(-1, Math.min(1, (e.clientY - r.top - r.height / 2) / (r.height / 2 - 32)))); };
   lever.addEventListener('pointerdown', (e) => { e.preventDefault(); vid = e.pointerId; try { lever.setPointerCapture(vid); } catch (err) {} moveV(e); });
   lever.addEventListener('pointermove', (e) => { if (e.pointerId === vid) moveV(e); });
