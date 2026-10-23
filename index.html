@@ -180,6 +180,42 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 body.touch #boostui{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
 #tboost.full{background:rgba(255,200,87,.85)!important;color:#1a1405!important;border-color:var(--accent)!important}
 #tboost.on{background:rgba(255,120,50,.85)!important;color:#1a1405!important}
+#result{position:fixed;inset:0;z-index:6;color:var(--ink);cursor:pointer}
+#result .lb{position:absolute;left:0;right:0;height:7vh;background:#05080b}
+#result .lb.t{top:0} #result .lb.b{bottom:0}
+#result .cap{position:absolute;left:0;top:7vh;padding:14px 60px 14px max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:2px;text-shadow:0 1px 4px rgba(0,0,0,.8);background:linear-gradient(90deg,rgba(5,8,11,.62),rgba(5,8,11,.35) 70%,transparent)}
+#result .cap small{font-family:var(--f-num);font-size:11px;letter-spacing:.2em;color:var(--accent)}
+#result .cap b{font-size:clamp(20px,3.4vw,30px);letter-spacing:.08em}
+#result .cap span{font-size:12px;opacity:.85}
+#result .mini{position:absolute;left:50%;bottom:calc(7vh + 18px);transform:translateX(-50%);text-align:center;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+#result .mini .num{font-size:clamp(34px,6vw,54px);color:var(--accent)}
+#result .mini small{display:block;font-size:12px;letter-spacing:.14em}
+#result .rpanel{position:absolute;right:max(20px,env(safe-area-inset-right,0px));top:calc(7vh + 14px);bottom:calc(7vh + 14px);width:min(380px,calc(100vw - 40px));overflow-y:auto;padding:16px 18px;background:rgba(12,18,24,.86);border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:8px;backdrop-filter:blur(6px);cursor:default;animation:rIn .35s ease-out}
+@keyframes rIn{from{opacity:0;transform:translateX(16px)}}
+#result .rhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#result .rank{font-family:var(--f-num);font-size:44px;line-height:1;color:var(--accent)}
+#result .rank small{font-family:var(--f-body);font-size:13px;color:var(--ink-dim);margin-left:4px}
+#result .rtime{font-family:var(--f-num);font-size:30px;color:var(--ink)}
+#result .rstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}
+#result .rstats div{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+#result .rstats span{display:block;font-size:10.5px;color:var(--ink-dim)}
+#result .rstats b{font-family:var(--f-num);font-weight:400;font-size:16px;color:var(--gauge)}
+#result .rstats b.new{color:var(--ok)}
+#result h4{margin:4px 0 6px;font-size:11px;letter-spacing:.14em;color:var(--ink-dim);font-weight:500}
+#result table{width:100%;border-collapse:collapse;font-size:13px}
+#result td{padding:5px 4px;border-bottom:1px solid var(--line)}
+#result td.r{font-family:var(--f-num);color:var(--ink-dim);width:2.2em}
+#result td.t{font-family:var(--f-num);text-align:right;white-space:nowrap}
+#result tr.me td{color:var(--accent)}
+#result i.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+#result .rbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#result .rbtns .go{background:var(--accent);color:#1a1405;border:none;font-weight:700;padding:8px 14px}
+#result .rbtns .go[aria-pressed="true"]{background:var(--ok)}
+#result .skip{position:absolute;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(7vh + 14px);background:rgba(12,18,24,.7);font-size:12px;padding:6px 12px}
+#result[data-ph="3"] .mini,#result[data-ph="3"] .skip{display:none}
+#result:not([data-ph="3"]) .rpanel{display:none}
+@media (max-height:460px){#result .lb{height:4vh}#result .cap{top:4vh;padding-top:8px;padding-bottom:8px}#result .rpanel{top:calc(4vh + 8px);bottom:calc(4vh + 8px);padding:10px 12px}#result .rank{font-size:32px}#result .rtime{font-size:22px}#result .mini{bottom:calc(4vh + 10px)}#result .skip{bottom:calc(4vh + 8px)}}
+@media (max-width:640px){#result[data-ph="3"] .cap{display:none}}
 #ifade{position:fixed;inset:0;z-index:5;background:#05080b;opacity:0;pointer-events:none}
 body.intro .hud,body.intro #touchui,body.intro #panel{visibility:hidden!important}
 @media (max-height:460px){#intro .lb{height:4vh}#intro .cap{top:4vh;padding-top:8px;padding-bottom:8px}#intro .rules{bottom:calc(4vh + 8px);padding:8px 12px}#intro .rules ol{font-size:12px;line-height:1.45}#intro .skip{bottom:calc(4vh + 8px)}#intro .bar{bottom:4vh}}
@@ -210,6 +246,24 @@ body.intro .hud,body.intro #touchui,body.intro #panel{visibility:hidden!importan
 <div id="ifade"></div>
 <div id="boostfx"></div>
 <div id="hitflash"></div>
+<div id="result" hidden data-ph="1">
+  <div class="lb t"></div><div class="lb b"></div>
+  <div class="cap"><small id="res-no">FINISH</small><b id="res-ttl">フィニッシュ！</b><span id="res-sub"></span></div>
+  <div class="mini"><small id="res-mlab">TIME</small><span class="num" id="res-mtime"></span></div>
+  <div class="rpanel" id="res-panel">
+    <div class="rhead"><div class="rank" id="res-rank"></div><div class="rtime" id="res-time"></div></div>
+    <div class="rstats">
+      <div><span>最高速度</span><b id="res-vmax"></b></div>
+      <div><span>クラッシュ</span><b id="res-crash"></b></div>
+      <div><span>自己ベスト</span><b id="res-best"></b></div>
+    </div>
+    <h4>このレースの順位</h4>
+    <table><tbody id="res-table"></tbody></table>
+    <div class="rbtns"><button type="button" class="go" id="res-ready">次のレースの準備OK</button><button type="button" id="res-replay">リプレイをもう一度</button><button type="button" id="res-close">閉じて自由に飛ぶ</button></div>
+    <p class="note" id="res-stat"></p>
+  </div>
+  <button type="button" class="skip" id="res-skip">スキップ</button>
+</div>
 <div class="hud" id="boostui" hidden><div class="lab" id="boostlab">ブースト充電中</div><div class="bb"><i id="boostbar"></i></div></div>
 <div id="intro" hidden>
   <div class="lb t"></div><div class="lb b"></div>
@@ -1232,7 +1286,7 @@ window.addEventListener('keydown', (e) => {
   else if (started && !S.crashed && performance.now() - menuOpenedAt > 350) resume();
 });
 document.addEventListener('pointerlockchange', () => {
-  if (!document.pointerLockElement && !ignoreLockLoss && !intro.on && performance.now() - intro.endedAt > 600 && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
+  if (!document.pointerLockElement && !ignoreLockLoss && !intro.on && !res.on && performance.now() - res.endedAt > 600 && performance.now() - intro.endedAt > 600 && started && !S.crashed && $('overlay').hidden && (mode === 'mouse' || !window.__isTouch)) openMenu();
 });
 $('go').addEventListener('click', () => { if (!grid || loading) return; started = true; race.state = 'off'; $('big').hidden = true; $('pausemsg').hidden = true; reset(); lockMouse(); });
 
@@ -1420,6 +1474,139 @@ function updateSpeedLines() {
   slGeo.attributes.position.needsUpdate = true; slGeo.attributes.color.needsUpdate = true;
 }
 
+// ---------- リザルト（ゴールの瞬間 → 走りのリプレイ → 上空から全体の軌跡と順位）----------
+const res = { on: false, t: 0, ph: 0, endedAt: -1e9, prevBest: null, line: null, T1: 3.2, T2: 0, spd: 1, cam: new THREE.Vector3(), camOk: false };
+const _rp = new THREE.Vector3(), _rq = new THREE.Quaternion(), _rv = new THREE.Vector3(), _rc = new THREE.Vector3();
+function startResult(prevBest) {
+  if (NET.spec) return;
+  res.on = true; res.t = 0; res.ph = 0; res.prevBest = prevBest; res.camOk = false;
+  const T = race.fin || 1;
+  res.spd = Math.max(1, T / Math.min(9, Math.max(4, T / 4))); res.T2 = Math.max(1.5, T / res.spd);       // 走り全体を 4〜9 秒に早回し
+  // 軌跡: 水平な帯（スタートは水色 → ゴールに近づくほど黄色）。建物に隠れないよう手前に描く
+  const R = race.rec, n = R.length, pos = new Float32Array(n * 6), col = new Float32Array(n * 6), idx = [], a = new THREE.Color(0x1fa8ff), b = new THREE.Color(0xff6a1a), c = new THREE.Color(), d = new THREE.Vector3(), sd = new THREE.Vector3();
+  for (let i = 0; i < n; i++) {
+    const p = R[i], q = R[Math.min(n - 1, i + 1)], o = R[Math.max(0, i - 1)];
+    d.set(q[0] - o[0], 0, q[2] - o[2]); if (d.lengthSq() < 1e-8) d.set(0, 0, 1); d.normalize(); sd.set(-d.z, 0, d.x).multiplyScalar(0.6);
+    pos.set([p[0] + sd.x, p[1] - 0.15, p[2] + sd.z, p[0] - sd.x, p[1] - 0.15, p[2] - sd.z], i * 6);
+    c.copy(a).lerp(b, i / Math.max(1, n - 1)); col.set([c.r, c.g, c.b, c.r, c.g, c.b], i * 6);
+    if (i < n - 1) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  }
+  if (res.line) { scene.remove(res.line); res.line.geometry.dispose(); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx);
+  res.line = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+  res.line.renderOrder = 10; res.line.frustumCulled = false; res.line.visible = false; scene.add(res.line);
+  $('result').hidden = false; document.body.classList.add('intro'); keys.clear();
+  $('res-mtime').textContent = fmtTime(race.fin);
+  $('res-skip').textContent = window.__isTouch ? 'タップでスキップ' : 'スキップ（Space / クリック）';
+  setResPhase(1); updateResultPanel();
+}
+function endResult() {
+  if (!res.on) return;
+  res.on = false; res.endedAt = performance.now();
+  $('result').hidden = true; $('ifade').style.opacity = 0; document.body.classList.remove('intro');
+  if (res.line) res.line.visible = false;
+  camInit = false; fpvInit = false; S.vel.set(0, 0, 0); S.cruise = (window.__touch && window.__touch.on) ? 1 : 0; syncAimToPlane(); keys.clear();
+  canvas.focus(); lockMouse();
+}
+function setResPhase(p) {
+  if (res.ph === p) return; res.ph = p; $('result').dataset.ph = String(p);
+  const best = res.prevBest == null || race.fin <= res.prevBest + 1e-6;
+  const T = { 1: ['FINISH', 'フィニッシュ！', '全リング通過'], 2: ['REPLAY', 'リプレイ', '×' + res.spd.toFixed(1) + ' の早回し'], 3: ['RESULT', 'リザルト', best ? '自己ベスト更新！' : ''] }[p];
+  $('res-no').textContent = T[0]; $('res-ttl').textContent = T[1]; $('res-sub').textContent = T[2];
+  $('res-mlab').textContent = p === 1 ? 'TIME' : 'REPLAY';
+  res.camOk = false;
+}
+function recAt(time) {
+  const R = race.rec, n = R.length; if (!n) return false;
+  let lo = 0, hi = n - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (R[m][7] <= time) lo = m; else hi = m - 1; }
+  const A = R[lo], B = R[Math.min(n - 1, lo + 1)], f = B[7] > A[7] ? clamp((time - A[7]) / (B[7] - A[7]), 0, 1) : 0;
+  _rp.set(A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f, A[2] + (B[2] - A[2]) * f);
+  _rq.set(A[3], A[4], A[5], A[6]).slerp(new THREE.Quaternion(B[3], B[4], B[5], B[6]), f);
+  _rv.set(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
+  return lo;
+}
+function resultCamera(dt) {
+  res.t += dt;
+  const t = res.t, T1 = res.T1, T2 = res.T2;
+  setResPhase(t < T1 ? 1 : t < T1 + T2 ? 2 : 3);
+  let lt;
+  if (res.ph === 1) {
+    // ゴールの瞬間: 機体のまわりをゆっくり回る
+    lt = t;
+    const a = S.yaw + Math.PI * 0.75 + lt * 0.7, r = 2.6 + lt * 0.5;
+    const want = _rc.set(S.pos.x + Math.sin(a) * r, S.pos.y + 0.5 + lt * 0.35, S.pos.z + Math.cos(a) * r);
+    camera.position.copy(clipCamera(S.pos.clone(), want)); camera.up.set(0, 1, 0); camera.lookAt(S.pos); camera.fov = 55;
+    plane.position.copy(S.pos); plane.quaternion.copy(S.q);
+    res.line.visible = false;
+  } else if (res.ph === 2) {
+    // リプレイ: 自分の走りを早回しで後ろから追いかける
+    lt = t - T1;
+    const idx = recAt(lt * res.spd);
+    plane.position.copy(_rp); plane.quaternion.copy(_rq); plane.visible = true;
+    const fwd = _rv.lengthSq() > 1e-6 ? _rv.normalize() : _rc.set(0, 0, -1).applyQuaternion(_rq);
+    const want = _rp.clone().addScaledVector(fwd, -3.4); want.y += 1.1;
+    if (!res.camOk) { res.cam.copy(want); res.camOk = true; }
+    res.cam.lerp(want, 1 - Math.exp(-dt * 6));
+    camera.position.copy(clipCamera(_rp.clone(), res.cam.clone())); camera.up.set(0, 1, 0); camera.lookAt(_rp.x + fwd.x * 3, _rp.y + fwd.y * 3, _rp.z + fwd.z * 3); camera.fov = 66;
+    res.line.visible = false;
+  } else {
+    // 上空から、走った軌跡の全体を見せる
+    lt = t - T1 - T2;
+    plane.position.copy(S.pos); plane.quaternion.copy(S.q);
+    res.line.visible = true; res.line.geometry.setDrawRange(0, Infinity);
+    if (!res.line.geometry.boundingSphere) res.line.geometry.computeBoundingSphere();
+    // 町全体と軌跡が入るように。右側の結果パネルに隠れないよう、注視点を少し右にずらして町を画面の左寄りに置く
+    const bs = res.line.geometry.boundingSphere, cx = (bs.center.x - 2) / 2, cz = (bs.center.z + 15) / 2;
+    const rr = Math.max(70, bs.radius + Math.hypot(bs.center.x + 2, bs.center.z - 15) * 0.5 + 8);
+    const a = lt * 0.06 + 2.4, wide = window.innerWidth > 640 ? 0.32 : 0;
+    camera.position.set(cx + Math.sin(a) * rr * 1.0, MAP.groundY + rr * 1.5, cz + Math.cos(a) * rr * 1.0);
+    _rc.set(Math.cos(a), 0, -Math.sin(a));       // 画面の右方向
+    camera.up.set(0, 1, 0); camera.lookAt(cx + _rc.x * rr * wide, MAP.groundY, cz + _rc.z * rr * wide); camera.fov = 52;
+    if (!res.panelT || performance.now() - res.panelT > 500) { res.panelT = performance.now(); updateResultPanel(); }
+  }
+  // 場面の切り替わりで暗転
+  const ph = res.ph, start = ph === 1 ? 0 : ph === 2 ? T1 : T1 + T2, end = ph === 1 ? T1 : ph === 2 ? T1 + T2 : 1e9;
+  const fin = Math.min(1, (t - start) / 0.3), fout = Math.min(1, (end - t) / 0.3);
+  $('ifade').style.opacity = (1 - Math.min(fin, fout)).toFixed(3);
+}
+function updateResultPanel() {
+  const list = (NET.board && NET.board.length) ? NET.board : [{ me: true, name: NET.nick || 'あなた', color: NET.myColor || '#ffc857', pr: { rc: { f: race.fin, k: race.passes } } }];
+  const fin = list.filter((e) => e.pr.rc && e.pr.rc.f != null).length;
+  const myIdx = Math.max(0, list.findIndex((e) => e.me)), n = list.length;
+  $('res-rank').innerHTML = (n > 1 && myIdx === 0 ? '1<small>位　優勝！</small>' : (myIdx + 1) + '<small>位 / ' + n + '人</small>');
+  $('res-time').textContent = fmtTime(race.fin);
+  $('res-vmax').textContent = Math.round(race.vmax * 3.6) + ' km/h';
+  $('res-crash').textContent = race.crashes + ' 回';
+  const isNew = res.prevBest == null || race.fin <= res.prevBest + 1e-6, bv = $('res-best');
+  bv.textContent = isNew ? 'NEW!' : fmtTime(res.prevBest); bv.classList.toggle('new', isNew);
+  const nR = rings.length || 10, tb = $('res-table'); tb.innerHTML = '';
+  list.forEach((e, i) => {
+    const rc = e.pr.rc || {}, tr = document.createElement('tr'); if (e.me) tr.className = 'me';
+    const st = rc.f != null ? fmtTime(rc.f) : (rc.s === 'crash' ? '墜落中' : '飛行中 ' + Math.min(rc.k || 0, nR) + '/' + nR);
+    const td = (cls, txt) => { const d = document.createElement('td'); if (cls) d.className = cls; d.textContent = txt; tr.appendChild(d); return d; };
+    td('r', rc.f != null ? String(i + 1) : '-');
+    const nd = td('', ''); const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = e.color || '#ccc'; nd.appendChild(dot); nd.appendChild(document.createTextNode((e.name || 'プレイヤー') + (e.me ? '（あなた）' : '')));
+    td('t', st);
+    tb.appendChild(tr);
+  });
+  const rb = $('res-ready'); rb.setAttribute('aria-pressed', String(!!NET.ready)); rb.textContent = NET.ready ? '準備OK ✓（取り消す）' : '次のレースの準備OK';
+  rb.hidden = !NET.room;
+  $('res-stat').textContent = (n > 1 ? (fin < n ? 'まだ ' + (n - fin) + ' 人が飛んでいます。' : '全員ゴールしました。') : '') + ($('readystat') ? ' ' + $('readystat').textContent : '');
+}
+$('result').addEventListener('pointerdown', (e) => { if (e.target.closest && e.target.closest('.rpanel, button')) return; e.preventDefault(); if (res.on && res.ph < 3) res.t = res.T1 + res.T2; });
+$('res-skip').addEventListener('click', () => { if (res.on) res.t = res.T1 + res.T2; });
+$('res-close').addEventListener('click', endResult);
+$('res-replay').addEventListener('click', () => { if (res.on) { res.t = 0; res.ph = 0; setResPhase(1); } });
+$('res-ready').addEventListener('click', (e) => { e.currentTarget.blur(); setReady(!NET.ready); updateResultPanel(); });
+canvas.addEventListener('mousedown', () => { if (res.on && res.ph < 3) res.t = res.T1 + res.T2; }, true);
+window.addEventListener('keydown', (e) => {
+  if (!res.on) return;
+  if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); if (res.ph < 3) res.t = res.T1 + res.T2; }
+  else if (e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); endResult(); }
+  else if (e.code === 'KeyG') { /* 準備OK はそのまま通す */ }
+  else if (['KeyW', 'KeyS', 'ShiftLeft', 'ShiftRight', 'KeyT', 'KeyC'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+
 // ---------- 衝突エフェクト（破片・火花・画面の揺れ）----------
 // 数十個の小さな箱をまとめて1回で描く。何も起きていないときは計算しない
 const FX = { deb: null, spk: null, D: [], K: [], shake: 0, lastC: 0, o: new THREE.Object3D(), c: new THREE.Color(), on: false };
@@ -1559,17 +1746,23 @@ window.addEventListener('resize', resize); resize();
 const DT = 1 / 240; let acc = 0, last = performance.now(), spin = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (grid && $('overlay').hidden && started && race.state !== 'countdown' && !NET.spec && !intro.on) {
+  if (grid && $('overlay').hidden && started && race.state !== 'countdown' && !NET.spec && !intro.on && !res.on) {
     const c = readInput(dt);
     acc += dt;
     while (acc >= DT) { stepDrone(S, P, H, c, DT, grid, MAP.bound, MAP.groundY); acc -= DT; }
     updateCourse();
+    // リプレイ用に 0.05 秒ごとに位置と向きを記録
+    if (race.state === 'running') {
+      race.vmax = Math.max(race.vmax, S.tele.V);
+      if (S.t - race.recT >= 0.05 && race.rec.length < 12000) { race.recT = S.t; race.rec.push([S.pos.x, S.pos.y, S.pos.z, S.q.x, S.q.y, S.q.z, S.q.w, S.t - race.t0]); }
+    }
     const hm = S.hitMax || 0; S.hitMax = 0;
     if (hm > 1.0 && !S.crashed) { hitTimer = 0.35; fxContact(S.pos, S.hn, hm); }
   }
   hitTimer -= dt; $('hitwarn').hidden = hitTimer <= 0 || camMode === 1;
   if (S.crashed && !crashShown) {
     crashShown = true;
+    if (race.state === 'running') race.crashes++;
     fxCrash(S.pos, S.vel, S.hn, true);
     $('crashmsg').textContent = 'クラッシュ：' + S.crashed; $('crashmsg').hidden = false; $('go').textContent = 'ニューゲーム';
     showBig('CRASH', 1300, { k: 'bad', s: '直前のリングから再スタート' });
@@ -1623,6 +1816,7 @@ function frame(now) {
     camera.fov = clamp(60 - best.distanceTo(S.pos) * 0.9, 12, 60);
   }
   if (intro.on && introCamera(dt)) { if (droneModel) droneModel.visible = true; }
+  else if (res.on) { resultCamera(dt); if (droneModel) droneModel.visible = true; }
   else camera.fov += clamp((S.tele.V - 4) / 12, 0, 1) * H.speedFov;
   camera.fov += boost.fx * 10; updateBoost(dt); updateFx(dt);
   updateSpeedLines();
@@ -1691,7 +1885,7 @@ function frame(now) {
 // 位置は room の presence で共有（15回/秒）。他の人は半透明のドローンで表示し、当たり判定はしない。
 // 「みんなでレース」は同じマップにいる全員にカウントダウンを送り、同時にスタートする。
 const NET = { ready: false, allSince: 0, lockUntil: 0, room: null, user: null, myPeer: null, ghosts: new Map(), names: {}, sendT: 0, nick: '' };
-const race = { state: 'off', t0: 0, goAt: 0, passes: 0, fin: null, id: 0 };
+const race = { state: 'off', t0: 0, goAt: 0, passes: 0, fin: null, id: 0, crashes: 0, vmax: 0, rec: [], recT: 0 };
 try { NET.nick = (localStorage.getItem('drone3-nick') || '').slice(0, 16); } catch (e) {}
 const r3 = (v, d) => Math.round(v * d) / d;
 
@@ -1827,7 +2021,8 @@ function onRingPass(idx) {
   race.passes++;
   if (isRandom() ? race.passes >= rings.length : race.passes > rings.length) {     // ランダムは全部集めたら、コースは1番に戻ったらゴール
     race.fin = S.t - race.t0; race.state = 'done';
-    showBig('FINISH', 4000, { k: 'ok', v: fmtTime(race.fin), s: '全リング通過' });
+    race.rec.push([S.pos.x, S.pos.y, S.pos.z, S.q.x, S.q.y, S.q.z, S.q.w, race.fin]);
+    startResult(course.best);
   }
 }
 
@@ -1839,6 +2034,7 @@ function startRaceLocal(id) {
   endIntro();
   reset(id);
   race.state = 'countdown'; race.id = id; race.passes = 0; race.fin = null;
+  race.crashes = 0; race.vmax = 0; race.rec = []; race.recT = -1; endResult();
   // ムービーの長さ＋3秒後にスタート（スキップしても スタートの時刻は変わらない）
   race.goAt = performance.now() + INTRO_LEN * 1000 + 3000; race.startedAt = performance.now();
   setReady(false); NET.lockUntil = race.goAt + 2000; NET.allSince = 0;
@@ -1920,6 +2116,7 @@ function renderBoard() {
   const inRace = race.state !== 'off';
   const score = (e) => { const rc = e.pr.rc; if (!rc || rc.id !== race.id) return -1; return rc.f != null ? 1e6 - rc.f : rc.k; };
   if (inRace) list.sort((a, b) => score(b) - score(a));
+  NET.board = inRace ? list.filter((e) => e.pr.rc && e.pr.rc.id === race.id) : null;
   const nR = rings.length || 1;
   const rows = list.map((e, i) => {
     const rc = e.pr.rc; let stat;
@@ -2067,7 +2264,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-2100';
+(() => { const B = '20261023-2130';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
