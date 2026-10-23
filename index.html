@@ -223,31 +223,54 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 <div id="overlay">
   <div class="card">
-    <h1>ドローンレース</h1>
-    <div class="modes maps" id="maps-start" hidden></div>
+    <style>
+      #overlay .mhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+      #overlay .mhead .chip{margin:0}
+      #overlay .mbtns{margin:4px 0 4px}
+      #overlay .msec{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+      #overlay .msec h2{margin:0 0 8px;font-size:14px;letter-spacing:.06em;color:var(--accent)}
+      #overlay .msec h2 small{font-size:11px;color:var(--ink-dim);font-weight:400;letter-spacing:0;margin-left:6px}
+      #overlay .lab{font-size:12px;color:var(--ink-dim);margin:0 0 6px}
+      #overlay details.mdet summary{cursor:pointer;color:var(--ink-dim);font-size:12px;padding:4px 0;list-style-position:inside}
+      #overlay details.msec > summary{font-size:14px;color:var(--accent);letter-spacing:.06em}
+      #overlay details[open] > summary{margin-bottom:8px}
+      #overlay #netbox input{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 9px;font:inherit;flex:1;min-width:120px}
+    </style>
+    <div class="mhead"><h1>砂漠ドローンレース</h1><p class="chip info" id="pausemsg" hidden>一時停止中</p></div>
     <p class="sub" id="mapdesc"></p>
     <p class="msg" id="crashmsg" hidden></p>
-    <p class="chip info" id="pausemsg" hidden style="display:inline-block;margin:0 0 12px">一時停止中</p>
-    <div id="netbox" hidden>
-      <p class="sub" style="margin:0 0 8px"><strong>みんなでレース</strong>　<span id="netcount"></span></p>
-      <div class="row"><label class="note" for="nick" style="margin:0">表示名</label><input id="nick" maxlength="16" placeholder="名前を入力"><button class="go alt" id="readybtn-start" type="button" aria-pressed="false">準備OK（G）</button></div>
+    <div class="row mbtns"><button class="go" id="resume" type="button" hidden>続ける</button><button class="go alt" id="ring1" type="button" hidden>直前のリングからやり直す</button><button class="go alt" id="go" type="button" disabled>読み込み中…</button></div>
+
+    <div class="msec" id="netbox" hidden>
+      <h2>みんなでレース<small id="roominfo" hidden>部屋「<span id="roomname"></span>」・<span id="netstate">接続しています…</span></small></h2>
+      <p class="note" id="netcount" style="margin:0 0 8px"></p>
+      <div class="row"><input id="nick" maxlength="16" placeholder="表示名を入力" aria-label="表示名"><button class="go alt" id="readybtn-start" type="button" aria-pressed="false">準備OK（G）</button></div>
       <p class="note num" id="readystat" style="margin:8px 0 0;color:var(--accent)"></p>
-      <p class="note" style="margin:6px 0 0">同じマップにいる全員が「準備OK」を押すと、全員がスタート地点に戻って3秒のカウントダウンでスタート。10個のリングを全部集めるタイムを競います。飛びながら G キーでも押せます。ほかの人は半透明のドローンで見えます（ぶつかりません）。</p>
       <p class="note" id="netmsg" style="margin:4px 0 0;color:var(--bad)"></p>
-      <p class="note" id="roominfo" hidden style="margin:6px 0 0">部屋: <b id="roomname"></b>（<span id="netstate">接続しています…</span>）　URLの最後に <b>?room=好きな名前</b> を付けると、仲間内だけの部屋になります。位置と表示名は公開の中継サーバーを通ります。</p>
+      <details class="mdet"><summary>レースのしかた・部屋のしくみ</summary>
+        <p class="note">同じ部屋・同じマップにいる全員が「準備OK」を押すと、全員がスタート地点に戻り、3秒のカウントダウンでスタート。10個のリングを全部集めるタイムを競います。ほかの人は半透明のドローンで見えます（ぶつかりません）。</p>
+        <p class="note">URLの最後に <b>?room=好きな名前</b> を付けると、その名前を知っている人だけの部屋になります。位置と表示名は公開の中継サーバーを通ります。</p>
+      </details>
     </div>
-    <div class="modes" id="modes-start" hidden></div>
-    <p class="sub" style="margin-bottom:6px">操作感度</p>
-    <div class="modes" id="hpresets-start"></div>
-    <div style="margin:0 0 14px"><label for="sens" style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>向きを変える感度（指でなぞる・左右旋回）</span><b class="num" id="sensval" style="color:var(--accent)">×1.0</b></label>
-    <input type="range" id="sens" min="0.3" max="3" step="0.1" value="1" style="width:100%;accent-color:var(--accent)"></div>
-    <script>(() => { const el = document.getElementById('sens'), out = document.getElementById('sensval'); let v = 1; try { v = parseFloat(localStorage.getItem('drone-sens')) || 1; } catch (e) {}
-      const set = (x) => { window.__sens = x; el.value = x; out.textContent = '×' + Number(x).toFixed(1); try { localStorage.setItem('drone-sens', String(x)); } catch (e) {} };
-      set(v); el.addEventListener('input', () => set(parseFloat(el.value))); })();</script>
-    <table id="helptable"></table>
-        <div class="row"><button class="go" id="resume" type="button" hidden>続ける</button><button class="go alt" id="ring1" type="button" hidden>直前のリングからやり直す（T）</button><button class="go alt" id="go" type="button" disabled>読み込み中…</button></div>
-    <p class="note" style="margin-top:10px">Esc キーでいつでもこのメニューを開けます。</p>
+
+    <div class="msec">
+      <h2>操作の設定</h2>
+      <p class="lab">動きの感じ</p>
+      <div class="modes" id="hpresets-start"></div>
+      <div><label for="sens" style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:4px"><span>向きを変える感度</span><b class="num" id="sensval" style="color:var(--accent)">×1.0</b></label>
+      <input type="range" id="sens" min="0.3" max="3" step="0.1" value="1" style="width:100%;accent-color:var(--accent)"></div>
+      <script>(() => { const el = document.getElementById('sens'), out = document.getElementById('sensval'); let v = 1; try { v = parseFloat(localStorage.getItem('drone-sens')) || 1; } catch (e) {}
+        const set = (x) => { window.__sens = x; el.value = x; out.textContent = '×' + Number(x).toFixed(1); try { localStorage.setItem('drone-sens', String(x)); } catch (e) {} };
+        set(v); el.addEventListener('input', () => set(parseFloat(el.value))); })();</script>
+    </div>
+
+    <details class="msec mdet" id="helpbox"><summary>操作方法</summary>
+      <table id="helptable"></table>
+    </details>
+
+    <p class="note" style="margin-top:12px">ゲーム中は Esc キー（スマホは「メニュー」ボタン）でこの画面に戻れます。</p>
     <p class="note credit" id="credit"></p>
+    <div class="modes maps" id="maps-start" hidden></div><div class="modes" id="modes-start" hidden></div>
   </div>
 </div>
 <div id="loading"><div class="card"><strong>マップを読み込み中</strong><p class="note" id="loadmsg">読み込んでいます。</p><div class="bar"><i id="loadbar"></i></div></div></div>
