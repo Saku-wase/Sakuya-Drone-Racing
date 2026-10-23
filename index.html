@@ -1264,7 +1264,8 @@ function frame(now) {
   if (S.crashed && !crashShown) {
     crashShown = true;
     $('crashmsg').textContent = '墜落：' + S.crashed; $('crashmsg').hidden = false; $('go').textContent = 'ニューゲーム';
-    setTimeout(() => { if (!S.crashed) return; $('pausemsg').hidden = true; $('resume').hidden = true; $('ring1').hidden = false; $('overlay').hidden = false; releaseLock(); }, 900);
+    showBig('墜落！ 前のリングから再開', 1200);
+    setTimeout(() => { if (!S.crashed) return; restartAtCheckpoint(); }, 1200);
   }
 
   plane.position.copy(S.pos); plane.quaternion.copy(S.q);
