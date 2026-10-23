@@ -170,6 +170,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #boostui .bb i{display:block;height:100%;width:0;background:var(--gauge)}
 #boostui.full .lab{color:var(--accent)} #boostui.full .bb i{background:var(--accent);box-shadow:0 0 10px var(--accent)}
 #boostui.on .lab{color:#ff9a4d} #boostui.on .bb i{background:linear-gradient(90deg,#ff6a3d,#ffc857)}
+#hitflash{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(255,240,220,.25) 0%,transparent 45%,rgba(255,70,50,.55) 100%)}
+#hitflash.go{animation:hflash .55s ease-out}
+#hitflash.sm{background:radial-gradient(ellipse at center,transparent 60%,rgba(255,170,80,.3) 100%)}
+@keyframes hflash{from{opacity:1}to{opacity:0}}
 #boostfx{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 52%,rgba(255,140,50,.28) 82%,rgba(255,110,40,.5) 100%)}
 @media (prefers-reduced-motion:no-preference){#boostfx.on{animation:bpulse .35s ease-in-out infinite alternate}}
 @keyframes bpulse{to{filter:brightness(1.35)}}
@@ -205,6 +209,7 @@ body.intro .hud,body.intro #touchui,body.intro #panel{visibility:hidden!importan
 <div class="hud" id="big" hidden></div>
 <div id="ifade"></div>
 <div id="boostfx"></div>
+<div id="hitflash"></div>
 <div class="hud" id="boostui" hidden><div class="lab" id="boostlab">ブースト充電中</div><div class="bb"><i id="boostbar"></i></div></div>
 <div id="intro" hidden>
   <div class="lb t"></div><div class="lb b"></div>
@@ -590,11 +595,12 @@ function stepDrone(S, P, H, c, dt, grid, bound, groundY) {
 
   // --- 当たり判定 ---
   let impact = 0, onGround = false;
+  if (!S.hn) S.hn = new THREE.Vector3(0, 1, 0);
   const hit = (nx, ny, nz) => {
     const vn = S.vel.x * nx + S.vel.y * ny + S.vel.z * nz;
-    if (vn < 0) { impact = Math.max(impact, -vn); const b = H.bounce ? 1.35 : 1.0; S.vel.x -= nx * vn * b; S.vel.y -= ny * vn * b; S.vel.z -= nz * vn * b; S.vel.multiplyScalar(0.92); }
+    if (vn < 0) { if (-vn >= impact) S.hn.set(nx, ny, nz); impact = Math.max(impact, -vn); const b = H.bounce ? 1.35 : 1.0; S.vel.x -= nx * vn * b; S.vel.y -= ny * vn * b; S.vel.z -= nz * vn * b; S.vel.multiplyScalar(0.92); }
   };
-  if (S.pos.y < gy + P.radius) { S.pos.y = gy + P.radius; const vy = S.vel.y; if (vy < 0) { impact = Math.max(impact, -vy); S.vel.y = 0; S.vel.x *= 0.9; S.vel.z *= 0.9; } onGround = true; }
+  if (S.pos.y < gy + P.radius) { S.pos.y = gy + P.radius; const vy = S.vel.y; if (vy < 0) { if (-vy >= impact) S.hn.set(0, 1, 0); impact = Math.max(impact, -vy); S.vel.y = 0; S.vel.x *= 0.9; S.vel.z *= 0.9; } onGround = true; }
   const rh = Math.hypot(S.pos.x, S.pos.z);
   if (bound && rh > bound) { const nx = -S.pos.x / rh, nz = -S.pos.z / rh; S.pos.x += nx * (rh - bound); S.pos.z += nz * (rh - bound); const vn = S.vel.x * nx + S.vel.z * nz; if (vn < 0) { S.vel.x -= nx * vn; S.vel.z -= nz * vn; } }
   if (S.pos.y > 80) { S.pos.y = 80; if (S.vel.y > 0) S.vel.y = 0; }
@@ -610,6 +616,7 @@ function stepDrone(S, P, H, c, dt, grid, bound, groundY) {
       if (!moved) break;
     }
   }
+  S.hitMax = Math.max(S.hitMax || 0, impact);
   if (impact > P.crashSpeed) { S.crashed = 'ぶつかって墜落しました（' + Math.round(impact * 3.6) + ' km/h）'; return; }
   if (impact > 1.0) S.hits++;
 
@@ -1413,6 +1420,86 @@ function updateSpeedLines() {
   slGeo.attributes.position.needsUpdate = true; slGeo.attributes.color.needsUpdate = true;
 }
 
+// ---------- 衝突エフェクト（破片・火花・画面の揺れ）----------
+// 数十個の小さな箱をまとめて1回で描く。何も起きていないときは計算しない
+const FX = { deb: null, spk: null, D: [], K: [], shake: 0, lastC: 0, o: new THREE.Object3D(), c: new THREE.Color(), on: false };
+const FX_COLS = [0x2b3036, 0x4a5259, 0x8d969e, 0xd5dadd, 0xffc857, 0xe0553f];
+function fxInit() {
+  const geo = new THREE.BoxGeometry(1, 1, 1);
+  FX.deb = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff }), 48);
+  FX.spk = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }), 120);
+  for (const m of [FX.deb, FX.spk]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; for (let i = 0; i < m.count; i++) m.setColorAt(i, FX.c.set(0xffffff)); m.count = 0; scene.add(m); }
+}
+const _fr = () => Math.random() * 2 - 1;
+function fxSparks(p, n, dir, speed) {
+  if (!FX.deb) fxInit();
+  for (let i = 0; i < n && FX.K.length < 120; i++) {
+    const v = new THREE.Vector3(_fr(), _fr(), _fr()).multiplyScalar(0.9);
+    if (dir) v.add(dir); v.normalize().multiplyScalar(speed * (0.4 + Math.random() * 0.8));
+    const life = 0.18 + Math.random() * 0.3;
+    FX.K.push({ p: p.clone(), v, life, max: life, hot: Math.random() < 0.5 });
+  }
+  FX.on = true;
+}
+function fxDebris(p, vel, n) {
+  if (!FX.deb) fxInit();
+  for (let i = 0; i < n && FX.D.length < 48; i++) {
+    const v = new THREE.Vector3(_fr(), Math.random() * 0.9 + 0.3, _fr()).normalize().multiplyScalar(2.5 + Math.random() * 3.5);
+    if (vel) v.addScaledVector(vel, 0.35);
+    const sz = 0.025 + Math.random() * 0.07, life = 1.6 + Math.random() * 0.9;
+    FX.D.push({ p: p.clone().add(new THREE.Vector3(_fr(), _fr(), _fr()).multiplyScalar(0.12)), v, r: new THREE.Euler(_fr() * 3, _fr() * 3, _fr() * 3), w: new THREE.Vector3(_fr(), _fr(), _fr()).multiplyScalar(14),
+      s: new THREE.Vector3(sz * (1 + Math.random() * 2.5), sz, sz * (0.6 + Math.random())), life, max: life, col: FX_COLS[i < 4 ? 4 + (i % 2) : (Math.random() * 4) | 0], rest: false });
+  }
+  FX.on = true;
+}
+function flash(small) { const el = $('hitflash'); el.classList.toggle('sm', !!small); el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
+// 軽くぶつかったとき: 当たった面から火花
+function fxContact(pos, n, imp) {
+  const now = performance.now(); if (now - FX.lastC < 90) return; FX.lastC = now;
+  const at = pos.clone(); if (n) at.addScaledVector(n, -0.2);
+  fxSparks(at, Math.round(clamp(imp * 3, 5, 18)), n, 2.5 + imp * 0.8);
+  FX.shake = Math.max(FX.shake, Math.min(0.1, imp * 0.025));
+  if (imp > 2.2) flash(true);
+}
+// 墜落: 機体が部品に分かれて飛び散る
+function fxCrash(pos, vel, n, mine) {
+  fxDebris(pos, vel, mine ? 30 : 18);
+  fxSparks(pos, mine ? 45 : 22, n, 6);
+  if (mine) { FX.shake = 0.35; flash(false); }
+}
+function updateFx(dt) {
+  if (!FX.on) return;
+  const o = FX.o, c = FX.c, gy = MAP.groundY;
+  let i = 0;
+  for (const d of FX.D) {
+    d.life -= dt;
+    if (!d.rest) {
+      d.v.y -= 9.8 * dt; d.p.addScaledVector(d.v, dt);
+      if (d.p.y < gy + d.s.y * 0.5) { d.p.y = gy + d.s.y * 0.5; d.v.y = -d.v.y * 0.3; d.v.x *= 0.6; d.v.z *= 0.6; d.w.multiplyScalar(0.6); if (Math.abs(d.v.y) < 0.4 && d.v.lengthSq() < 0.3) d.rest = true; }
+      else if (grid && clearance(grid, d.p.x, d.p.y, d.p.z, 0.2) < 0.03) { d.p.addScaledVector(d.v, -dt); d.v.multiplyScalar(-0.25); }
+      d.r.x += d.w.x * dt; d.r.y += d.w.y * dt; d.r.z += d.w.z * dt;
+    }
+    if (d.life <= 0) continue;
+    const k = Math.min(1, d.life / 0.4);
+    o.position.copy(d.p); o.rotation.copy(d.r); o.scale.copy(d.s).multiplyScalar(k); o.updateMatrix();
+    FX.deb.setMatrixAt(i, o.matrix); FX.deb.setColorAt(i, c.set(d.col)); i++;
+  }
+  FX.D = FX.D.filter((d) => d.life > 0); FX.deb.count = i;
+  i = 0;
+  for (const q of FX.K) {
+    q.life -= dt; if (q.life <= 0) continue;
+    q.v.multiplyScalar(Math.exp(-dt * 3)); q.v.y -= 7 * dt; q.p.addScaledVector(q.v, dt);
+    const f = q.life / q.max, len = 0.04 + q.v.length() * 0.035;
+    o.position.copy(q.p); o.lookAt(_tw.copy(q.p).add(q.v)); const w = 0.022 * (0.4 + 0.6 * f); o.scale.set(w, w, len * (0.5 + 0.5 * f)); o.updateMatrix();
+    FX.spk.setMatrixAt(i, o.matrix); FX.spk.setColorAt(i, q.hot ? c.setRGB(1, 0.92, 0.55) : c.setRGB(1, 0.5 + 0.2 * f, 0.12)); i++;
+  }
+  FX.K = FX.K.filter((q) => q.life > 0); FX.spk.count = i;
+  for (const m of [FX.deb, FX.spk]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  if (FX.shake > 0.002) { camera.position.x += _fr() * FX.shake; camera.position.y += _fr() * FX.shake; camera.position.z += _fr() * FX.shake; FX.shake *= Math.exp(-dt * 9); }
+  else FX.shake = 0;
+  if (!FX.D.length && !FX.K.length && !FX.shake) FX.on = false;
+}
+
 // ---------- ブーストの演出（画面の縁が光る・視野が広がる・機体から光の帯）----------
 let trail = null;
 const _tw = new THREE.Vector3(), _ts = new THREE.Vector3();
@@ -1477,18 +1564,20 @@ function frame(now) {
     acc += dt;
     while (acc >= DT) { stepDrone(S, P, H, c, DT, grid, MAP.bound, MAP.groundY); acc -= DT; }
     updateCourse();
-    if (S.tele.impact > 1.0) hitTimer = 0.35;
+    const hm = S.hitMax || 0; S.hitMax = 0;
+    if (hm > 1.0 && !S.crashed) { hitTimer = 0.35; fxContact(S.pos, S.hn, hm); }
   }
   hitTimer -= dt; $('hitwarn').hidden = hitTimer <= 0 || camMode === 1;
   if (S.crashed && !crashShown) {
     crashShown = true;
+    fxCrash(S.pos, S.vel, S.hn, true);
     $('crashmsg').textContent = 'クラッシュ：' + S.crashed; $('crashmsg').hidden = false; $('go').textContent = 'ニューゲーム';
     showBig('CRASH', 1300, { k: 'bad', s: '直前のリングから再スタート' });
     setTimeout(() => { if (!S.crashed) return; restartAtCheckpoint(); }, 1200);
   }
 
   if (NET.spec) specFollow(dt);
-  plane.visible = !NET.spec;
+  plane.visible = !NET.spec && !S.crashed;      // 墜落したら機体はバラバラに（破片を表示）
   plane.position.copy(S.pos); plane.quaternion.copy(S.q);
   // 光を計算しないマップでは丸い影を落とす
   blob.visible = !!MAP.unlit && !!grid;
@@ -1535,7 +1624,7 @@ function frame(now) {
   }
   if (intro.on && introCamera(dt)) { if (droneModel) droneModel.visible = true; }
   else camera.fov += clamp((S.tele.V - 4) / 12, 0, 1) * H.speedFov;
-  camera.fov += boost.fx * 10; updateBoost(dt);
+  camera.fov += boost.fx * 10; updateBoost(dt); updateFx(dt);
   updateSpeedLines();
   camera.aspect = baseAspect * (inFpv ? H.cockpitWide : 1);
   camera.updateProjectionMatrix();
@@ -1696,6 +1785,8 @@ function netFrame(dt) {
     g.root.position.copy(g.pos); g.obj.quaternion.copy(g.q);
     g.root.visible = true;
     g.halo.material.opacity = pr.st === 'fly' ? 0.55 : 0.2;
+    if (pr.st === 'crash' && g.lastSt && g.lastSt !== 'crash') fxCrash(g.pos, null, null, false);
+    g.lastSt = pr.st; g.obj.visible = pr.st !== 'crash';
     for (let i = 0; i < g.rotors.length; i++) g.rotors[i].rotation.y = (i % 2 ? 1 : -1) * spin;
     drawLabel(g, peerName(peer) + (pr.st === 'crash' ? '（墜落）' : pr.st === 'menu' ? '（休憩中）' : ''), peerColor(peer));
   }
@@ -1976,7 +2067,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-2030';
+(() => { const B = '20261023-2100';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
