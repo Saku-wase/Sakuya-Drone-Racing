@@ -162,6 +162,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 <div class="hud box" id="keys"></div>
 <div class="hud box" id="players" hidden><div class="ttl" id="board-title"></div><table><tbody id="board"></tbody></table><div class="oth" id="board-other"></div></div>
 <div class="hud" id="big" hidden></div>
+<div class="hud box" id="specbar" hidden style="top:calc(104px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:6px 8px 6px 12px;pointer-events:auto;z-index:6;display:flex;gap:10px;align-items:center;font-size:12px;white-space:nowrap"><span id="spectext"></span><button type="button" id="specnext">次の人（V）</button></div>
 <div class="hud box" id="clickhint" hidden>画面をクリックすると操作できます</div>
 <div class="hud" id="ar" hidden data-off="0"><i id="ar-arrow"></i><span id="ar-label"></span></div>
 <div class="hud" id="aim" hidden></div>
@@ -1068,7 +1069,7 @@ function renderModeUI() {
     }
   }
   $('helptable').innerHTML = MODES[mode].help.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('') +
-    '<tr><td>G</td><td>準備OK（みんなでレース）</td></tr><tr><td>T</td><td>直前に通ったリングの手前からやり直す</td></tr><tr><td>C</td><td>視点切替（追従・FPV・定点カメラ）</td></tr><tr><td>Esc</td><td>メニュー（一時停止・ニューゲーム）</td></tr>';
+    '<tr><td>G</td><td>準備OK（みんなでレース）</td></tr><tr><td>T</td><td>直前に通ったリングの手前からやり直す</td></tr><tr><td>C</td><td>視点切替（追従・一人称）</td></tr><tr><td>Esc</td><td>メニュー（一時停止・ニューゲーム）</td></tr>';
   $('keys').innerHTML = MODES[mode].help.slice(0, 5).map(([a, b]) => `<b>${a}</b>${b.split('（')[0]}`).join('　');
   $('opt-invert-label').textContent = '前後のキーを反転';
 }
@@ -1076,7 +1077,7 @@ function setMode(m) { mode = m; try { localStorage.setItem('cath-mode', m); } ca
 
 // ---------- 状態 ----------
 let S = makeDroneState(MAP.start[0], MAP.start[1], MAP.start[2], MAP.startYaw);
-let camMode = 0; const CAM_NAMES = ['追従', 'FPV', '定点カメラ'];
+let camMode = 0; const CAM_NAMES = ['追従', 'FPV'];
 const course = { next: 0, lapStart: null, best: null, got: 0, last: null, prevPos: new THREE.Vector3() };
 const bestKey = () => 'drone3-best-' + mapId + (MAP.mode === 'random' ? '-rand' : '');
 const camFollow = new THREE.Vector3().copy(S.pos), camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
@@ -1287,7 +1288,7 @@ window.addEventListener('resize', resize); resize();
 const DT = 1 / 240; let acc = 0, last = performance.now(), spin = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (grid && $('overlay').hidden && started && race.state !== 'countdown') {
+  if (grid && $('overlay').hidden && started && race.state !== 'countdown' && !NET.spec) {
     const c = readInput(dt);
     acc += dt;
     while (acc >= DT) { stepDrone(S, P, H, c, DT, grid, MAP.bound, MAP.groundY); acc -= DT; }
@@ -1302,6 +1303,8 @@ function frame(now) {
     setTimeout(() => { if (!S.crashed) return; restartAtCheckpoint(); }, 1200);
   }
 
+  if (NET.spec) specFollow(dt);
+  plane.visible = !NET.spec;
   plane.position.copy(S.pos); plane.quaternion.copy(S.q);
   // 光を計算しないマップでは丸い影を落とす
   blob.visible = !!MAP.unlit && !!grid;
@@ -1357,7 +1360,7 @@ function frame(now) {
   // AR表示: 次のリング
   {
     const el = $('ar'), ring = isRandom() ? nearestRing(S.pos) : rings[course.next];
-    const show = !!ring && H.arMarker && $('overlay').hidden && !S.crashed && started;
+    const show = !!ring && H.arMarker && $('overlay').hidden && !S.crashed && started && !NET.spec;
     el.hidden = !show;
     if (show) {
       camera.updateMatrixWorld();
@@ -1418,14 +1421,14 @@ try { NET.nick = (localStorage.getItem('drone3-nick') || '').slice(0, 16); } cat
 const r3 = (v, d) => Math.round(v * d) / d;
 
 function myPresence() {
-  const st = !started ? 'menu' : S.crashed ? 'crash' : !$('overlay').hidden ? 'menu' : 'fly';
+  const st = NET.spec ? 'watch' : !started ? 'menu' : S.crashed ? 'crash' : !$('overlay').hidden ? 'menu' : 'fly';
   const o = {
     m: mapId, st, nk: NET.nick || null, rd: NET.ready,
     p: [r3(S.pos.x, 100), r3(S.pos.y, 100), r3(S.pos.z, 100)],
     v: [r3(S.vel.x, 100), r3(S.vel.y, 100), r3(S.vel.z, 100)],
     q: [r3(S.q.x, 1000), r3(S.q.y, 1000), r3(S.q.z, 1000), r3(S.q.w, 1000)],
     n: course.next, best: course.best == null ? null : r3(course.best, 10),
-    rc: race.state === 'off' ? null : { id: race.id, s: race.state, k: race.passes, f: race.fin == null ? null : r3(race.fin, 100) },
+    rc: race.state === 'off' ? null : { id: race.id, s: race.state, k: race.passes, f: race.fin == null ? null : r3(race.fin, 100), a: race.state === 'running' ? Math.round(S.t - race.t0) : 0 },
   };
   return o;
 }
@@ -1492,6 +1495,7 @@ function netFrame(dt) {
     if (peer.sameTab || peer.kind !== 'viewer') continue;
     const pr = peer.presence || {};
     if (pr.m !== mapId || !Array.isArray(pr.p) || pr.p.length !== 3) continue;
+    if (pr.st === 'watch') continue;
     const g = ghostFor(peer); if (!g) continue;
     seen.add(peer.peer);
     if (g.last !== pr) { g.last = pr; g.recv = now; }
@@ -1565,14 +1569,38 @@ function setReady(v) {
 function checkReady(list) {
   const now = performance.now();
   const n = list.length, ok = list.filter((e) => e.pr.rd === true).length;
-  $('readystat').textContent = '準備OK ' + ok + ' / ' + n + ' 人' + (n > 1 ? '　全員そろうと自動でスタートします' : '　ひとりでも押すとスタートします');
-  if (!grid || loading || n === 0 || ok < n || now < NET.lockUntil) { NET.allSince = 0; return; }
+  $('readystat').textContent = NET.raceActive ? 'レース中です。全員がゴールしたら、準備OKで次のレースを始められます（準備OK ' + ok + ' / ' + n + ' 人）' : '準備OK ' + ok + ' / ' + n + ' 人' + (n > 1 ? '　全員そろうと自動でスタートします' : '　ひとりでも押すとスタートします');
+  if (!grid || loading || n === 0 || ok < n || now < NET.lockUntil || NET.raceActive) { NET.allSince = 0; return; }
   if (!NET.allSince) NET.allSince = now;
   // 合図を送るのは1人だけ（番号の若い人から順に。送れなかったら次の人）
   const order = list.map((e) => e.peer || '').sort();
   const rank = Math.max(0, order.indexOf(NET.myPeer || ''));
   if (now - NET.allSince >= 600 + rank * 900) { NET.lockUntil = now + 1500; requestRace(); }
 }
+
+// 観戦モード
+function onSpecChange(was) {
+  $('specbar').hidden = !NET.spec;
+  if (ringGroup) ringGroup.visible = !NET.spec;
+  if (NET.spec) { NET.specIdx = 0; fpvInit = false; camInit = false; showBig('レース中なので観戦します', 2000); }
+  else if (was) { if (started) reset(); if (ringGroup) ringGroup.visible = true; showBig('レース終了！ 準備OKで次のレースに参加できます', 3000); }
+}
+const _sf = new THREE.Vector3();
+function specFollow(dt) {
+  const list = NET.racers || [];
+  if (!list.length) { $('spectext').textContent = '観戦中（レース中の人を探しています）'; return; }
+  const t = list[((NET.specIdx || 0) % list.length + list.length) % list.length];
+  const g = NET.ghosts.get(t.peer);
+  $('spectext').textContent = '観戦中：' + t.name + '（' + (list.length > 1 ? ((NET.specIdx || 0) % list.length + 1) + ' / ' + list.length + ' 人' : '1人') + '）　レースが終わると参加できます';
+  if (!g) return;
+  S.pos.copy(g.pos); S.q.copy(g.q); S.vel.set(0, 0, 0);
+  _sf.set(0, 0, -1).applyQuaternion(g.q);
+  const yaw = Math.atan2(-_sf.x, -_sf.z); S.yaw = yaw;
+  let d = yaw - aim.yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+  aim.yaw += d * Math.min(1, dt * 6); aim.pitch += (-0.12 - aim.pitch) * Math.min(1, dt * 6);
+}
+$('specnext').addEventListener('click', (e) => { NET.specIdx = (NET.specIdx || 0) + 1; e.currentTarget.blur(); });
+window.addEventListener('keydown', (e) => { if (e.code === 'KeyV' && NET.spec && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) NET.specIdx = (NET.specIdx || 0) + 1; });
 
 // 順位表
 function renderBoard() {
@@ -1590,6 +1618,14 @@ function renderBoard() {
     if (pr.m === mapId) list.push({ me: false, peer: peer.peer, name: peerName(peer), color: peerColor(peer), pr });
   }
   resolveNames(room.peers());
+  // 誰かがレース中（カウントダウン中、または走り始めて5分以内）なら、そのレースに入っていない人は観戦
+  const activeOf = (rc) => !!rc && (rc.s === 'countdown' || (rc.s === 'running' && (rc.a || 0) < 300));
+  let act = null; for (const e of list) if (!e.me && activeOf(e.pr.rc)) { act = e.pr.rc.id; break; }
+  const wasSpec = !!NET.spec;
+  NET.spec = act != null && !(race.state !== 'off' && race.id === act);
+  NET.raceActive = list.some((e) => activeOf(e.pr.rc));
+  NET.racers = list.filter((e) => !e.me && e.peer && e.pr.rc && e.pr.rc.id === act && e.pr.st !== 'watch').map((e) => ({ peer: e.peer, name: e.name }));
+  if (NET.spec !== wasSpec) onSpecChange(wasSpec);
   checkReady(list);
   const inRace = race.state !== 'off';
   const score = (e) => { const rc = e.pr.rc; if (!rc || rc.id !== race.id) return -1; return rc.f != null ? 1e6 - rc.f : rc.k; };
@@ -1598,7 +1634,7 @@ function renderBoard() {
   const rows = list.map((e, i) => {
     const rc = e.pr.rc; let stat;
     if (inRace && rc && rc.id === race.id) stat = rc.f != null ? 'ゴール ' + fmtTime(rc.f) : rc.s === 'countdown' ? 'スタート待ち' : (isRandom() ? '回収 ' : 'リング ') + Math.min(rc.k, nR) + '/' + nR;
-    else stat = e.pr.st === 'fly' ? (isRandom() ? '回収 ' + (e.pr.n || 0) : 'リング ' + ((e.pr.n || 0) + 1)) + '/' + nR : e.pr.st === 'crash' ? '墜落' : '休憩中';
+    else stat = e.pr.st === 'fly' ? (isRandom() ? '回収 ' + (e.pr.n || 0) : 'リング ' + ((e.pr.n || 0) + 1)) + '/' + nR : e.pr.st === 'crash' ? '墜落' : e.pr.st === 'watch' ? '観戦中' : '休憩中';
     if (e.pr.rd === true) stat = (inRace ? '次も ' : '') + '準備OK ✓';
     const best = e.pr.best != null ? fmtTime(e.pr.best) : '--:--.-';
     return { i: inRace ? i + 1 : '', name: e.me ? (e.name ? e.name + '（あなた）' : 'あなた') : e.name, color: e.color, stat, best };
@@ -1740,7 +1776,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-1515';
+(() => { const B = '20261023-1530';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
