@@ -1004,9 +1004,10 @@ const MODES = {
   easy: { name: 'キーボードのみ', tag: 'マウス不要', help: [['W / S（または ↑ ↓）', '前進・後退'], ['A / D（または ← →）', '左右に旋回'], ['Q / E', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['R / F', 'スピード設定を上げる・下げる'], ['キーを離す', 'その場で止まってホバリング']] },
   manual: { name: 'マニュアル', tag: '実機のアングルモード', help: [['W / S（または ↑ ↓）', '前後に傾ける（前進・後退）'], ['A / D（または ← →）', '左右に傾ける（横移動）'], ['Q / E', '機首の向きを回す'], ['Space / Shift', '上昇・下降'], ['キーを離す', '水平に戻る（慣性で少し流れる）']] },
 };
-let mode = 'easy';
+window.__isTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && matchMedia('(pointer: coarse)').matches; window.__touch = window.__touch || {};
+let mode = window.__isTouch ? 'mouse' : 'easy';
 
-const aim = { yaw: 0, pitch: 0 };
+const aim = { yaw: 0, pitch: 0 }; window.__aim = aim;
 canvas.addEventListener('mousemove', (e) => {
   if (mode !== 'mouse' || !$('overlay').hidden) return;
   const sens = 0.0022 * H.sens;
@@ -1019,6 +1020,7 @@ function aimDir(out) { return out.set(-Math.sin(aim.yaw) * Math.cos(aim.pitch), 
 function syncAimToPlane() { aim.yaw = S.yaw; aim.pitch = -0.08; }
 function readInput(dt) {
   const k = (c) => keys.has(c) ? 1 : ((window.__touch && window.__touch[c]) || 0);
+  if (window.__touch && window.__touch.on) S.cruise = 1;
   if (mode !== 'mouse') S.cruise = clamp(S.cruise + (k('KeyR') - k('KeyF')) * 0.5 * dt, 0.1, 1);
   return droneControls(mode, S, P, H, k, aimDir(_d), $('opt-invert').checked, boostHeld && mode === 'mouse', dt);
 }
@@ -1632,21 +1634,19 @@ requestAnimationFrame(frame);
 })();
 
 </script>
-<!-- スマホ用の操作（画面のスティックとボタン） -->
+<!-- スマホ用の操作: 指でなぞって向きを変える（マウスと同じ）＋ 左のレバーでスピード -->
 <style>
 #touchui{position:fixed;inset:0;z-index:4;pointer-events:none;display:none}
 body.touch #touchui{display:block}
 body.touch #gauges,body.touch #keys{display:none}
-.tstick{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom,0px));width:140px;height:140px;border-radius:50%;background:rgba(16,24,32,.35);border:2px solid rgba(232,238,241,.35);pointer-events:auto;touch-action:none}
-.tstick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,200,87,.75);box-shadow:0 2px 6px rgba(0,0,0,.4)}
-.tstick b{position:absolute;left:0;right:0;top:-22px;text-align:center;font-size:11px;color:#e8eef1;text-shadow:0 1px 2px #000;font-weight:500}
-#tstickL{left:max(18px,env(safe-area-inset-left,0px))}
-#tstickR{right:max(18px,env(safe-area-inset-right,0px))}
+#tlook{position:absolute;inset:0;pointer-events:auto;touch-action:none}
+.tlever{position:absolute;left:max(22px,env(safe-area-inset-left,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));width:76px;height:180px;border-radius:38px;background:rgba(16,24,32,.38);border:2px solid rgba(232,238,241,.35);pointer-events:auto;touch-action:none}
+.tlever i{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:rgba(255,200,87,.8);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.tlever b{position:absolute;left:-20px;right:-20px;top:-22px;text-align:center;font-size:11px;color:#e8eef1;text-shadow:0 1px 2px #000;font-weight:500}
+.tlever s{position:absolute;left:0;right:0;text-align:center;font-size:10px;color:#e8eef1;opacity:.7;text-decoration:none}
 .tbtns{position:absolute;top:50%;transform:translateY(-75%);right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;pointer-events:auto}
 .tbtns button{width:56px;height:44px;padding:0;font-size:12px;font-weight:700;background:rgba(16,24,32,.7);color:#e8eef1;border:1px solid rgba(160,190,205,.35);border-radius:8px;touch-action:none}
-.tspd{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
-.tspd button{width:62px;height:40px;padding:0;font-size:12px;font-weight:700;background:rgba(16,24,32,.7);color:#e8eef1;border:1px solid rgba(160,190,205,.35);border-radius:8px;touch-action:none}
-@media (max-height:420px){.tstick{width:120px;height:120px}}
+@media (max-height:420px){.tlever{height:150px}}
 body.touch #overlay{place-items:start center;padding-top:12px;padding-bottom:12px}
 body.touch #course{top:calc(8px + env(safe-area-inset-top,0px));padding:4px 10px;gap:10px}
 body.touch #course .num{font-size:15px}
@@ -1655,48 +1655,44 @@ body.touch #topleft .name{display:none}
 body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px;min-width:0}
 </style>
 <div id="touchui" aria-hidden="true">
-  <div class="tstick" id="tstickL"><b>前後・旋回</b><i></i></div>
-  <div class="tstick" id="tstickR"><b>上下・横移動</b><i></i></div>
-  <div class="tspd"><button type="button" id="tslow">遅く</button><button type="button" id="tfast">速く</button></div>
+  <div id="tlook"></div>
+  <div class="tlever" id="tlever"><b>スピード</b><s style="top:8px">前進</s><s style="bottom:8px">後退</s><i></i></div>
   <div class="tbtns"><button type="button" id="tmenu">メニュー</button><button type="button" id="tretry">やり直す</button><button type="button" id="tview">視点</button></div>
 </div>
 <script>
 (() => {
-  const isTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && matchMedia('(pointer: coarse)').matches;
-  if (!isTouch) return;
+  if (!window.__isTouch) return;
   document.body.classList.add('touch');
-  const T = window.__touch = {};
+  const T = window.__touch; T.on = true;
   const key = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true })); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true })), 60); };
-  // スティック: 傾けた量をキーの強さ（0〜1）として渡す
-  function stick(el, map) {
-    const knob = el.querySelector('i'); let id = null;
-    const set = (x, y) => {
-      knob.style.transform = `translate(${x * 42}px, ${y * 42}px)`;
-      const dz = (v) => Math.abs(v) < 0.12 ? 0 : (Math.abs(v) - 0.12) / 0.88 * Math.sign(v);
-      const X = dz(x), Y = dz(y);
-      T[map.up] = Math.max(0, -Y); T[map.down] = Math.max(0, Y); T[map.left] = Math.max(0, -X); T[map.right] = Math.max(0, X);
-    };
-    const move = (e) => { const r = el.getBoundingClientRect(); let x = (e.clientX - r.left - r.width / 2) / (r.width / 2), y = (e.clientY - r.top - r.height / 2) / (r.height / 2); const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } set(x, y); };
-    el.addEventListener('pointerdown', (e) => { id = e.pointerId; el.setPointerCapture(id); move(e); e.preventDefault(); });
-    el.addEventListener('pointermove', (e) => { if (e.pointerId === id) move(e); });
-    const end = (e) => { if (e.pointerId === id) { id = null; set(0, 0); } };
-    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
-  }
-  stick(document.getElementById('tstickL'), { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD' });
-  stick(document.getElementById('tstickR'), { up: 'Space', down: 'ShiftLeft', left: 'KeyQ', right: 'KeyE' });
-  // 押している間だけ効くボタン（速く・遅く）
-  const hold = (id, code) => { const b = document.getElementById(id); b.addEventListener('pointerdown', (e) => { T[code] = 1; e.preventDefault(); }); for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, () => { T[code] = 0; }); };
-  hold('tfast', 'KeyR'); hold('tslow', 'KeyF');
+  // 画面をなぞると向きが変わる（マウスを動かすのと同じ）
+  const look = document.getElementById('tlook'); let lid = null, lx = 0, ly = 0;
+  look.addEventListener('pointerdown', (e) => { e.preventDefault(); lid = e.pointerId; lx = e.clientX; ly = e.clientY; try { look.setPointerCapture(lid); } catch (err) {} });
+  look.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== lid || !window.__aim) return;
+    const s = 0.006, a = window.__aim;
+    a.yaw -= (e.clientX - lx) * s; a.pitch = Math.max(-1.45, Math.min(1.45, a.pitch - (e.clientY - ly) * s));
+    lx = e.clientX; ly = e.clientY;
+  });
+  const lend = (e) => { if (e.pointerId === lid) lid = null; };
+  look.addEventListener('pointerup', lend); look.addEventListener('pointercancel', lend);
+  // 左のレバー: 上に倒すほど速く前進、下で後退。離すとその場で止まる
+  const lever = document.getElementById('tlever'), knob = lever.querySelector('i'); let vid = null;
+  const setV = (y) => { knob.style.transform = `translateY(${y * (lever.clientHeight / 2 - 32)}px)`; const v = Math.abs(y) < 0.1 ? 0 : (Math.abs(y) - 0.1) / 0.9; T.KeyW = y < 0 ? v : 0; T.KeyS = y > 0 ? v : 0; };
+  const moveV = (e) => { const r = lever.getBoundingClientRect(); setV(Math.max(-1, Math.min(1, (e.clientY - r.top - r.height / 2) / (r.height / 2 - 32)))); };
+  lever.addEventListener('pointerdown', (e) => { e.preventDefault(); vid = e.pointerId; try { lever.setPointerCapture(vid); } catch (err) {} moveV(e); });
+  lever.addEventListener('pointermove', (e) => { if (e.pointerId === vid) moveV(e); });
+  const vend = (e) => { if (e.pointerId === vid) { vid = null; setV(0); } };
+  lever.addEventListener('pointerup', vend); lever.addEventListener('pointercancel', vend);
   document.getElementById('tmenu').addEventListener('click', () => key('Escape'));
   document.getElementById('tretry').addEventListener('click', () => key('KeyT'));
   document.getElementById('tview').addEventListener('click', () => key('KeyC'));
-  // メニューが開いている間はスティックを隠す
+  // メニューが開いている間は操作部品を隠す
   const ov = document.getElementById('overlay'), ui = document.getElementById('touchui');
-  const sync = () => { ui.style.visibility = ov.hidden ? 'visible' : 'hidden'; if (!ov.hidden) for (const k in T) T[k] = 0; };
+  const sync = () => { ui.style.visibility = ov.hidden ? 'visible' : 'hidden'; if (!ov.hidden) { T.KeyW = T.KeyS = 0; setV(0); } };
   new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['hidden'] }); sync();
-  // メニューにスマホ操作の説明を足す
   const note = document.createElement('p'); note.className = 'note'; note.style.margin = '0 0 12px';
-  note.textContent = 'スマホ: 左のスティックで前進・後退と旋回、右のスティックで上昇・下降と横移動。「速く」「遅く」でスピード設定を変えられます。横向きがおすすめです。';
+  note.textContent = 'スマホ: 画面を指でなぞると向きが変わります（見ている方向へ進みます。上を向けば上昇）。左のレバーを上に倒すほど速く前進、下で後退、離すとその場で止まります。横向きがおすすめです。';
   const ht = document.getElementById('helptable'); if (ht) ht.parentNode.insertBefore(note, ht);
 })();
 </script>
