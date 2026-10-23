@@ -1738,4 +1738,13 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 })();
 </script>
 
+<script>
+// 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
+(() => { const B = '20261023-1515';
+  fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
+    const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
+    const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
+    location.replace(location.pathname + '?' + q.toString() + location.hash);
+  }).catch(() => {}); })();
+</script>
 </body></html>
