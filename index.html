@@ -1033,7 +1033,7 @@ const MODES = {
   manual: { name: 'マニュアル', tag: '実機のアングルモード', help: [['W / S（または ↑ ↓）', '前後に傾ける（前進・後退）'], ['A / D（または ← →）', '左右に傾ける（横移動）'], ['Q / E', '機首の向きを回す'], ['Space / Shift', '上昇・下降'], ['キーを離す', '水平に戻る（慣性で少し流れる）']] },
 };
 window.__isTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && matchMedia('(pointer: coarse)').matches; window.__touch = window.__touch || {};
-let mode = window.__isTouch ? 'mouse' : 'easy';
+let mode = 'mouse';
 
 const aim = { yaw: 0, pitch: 0 }; window.__aim = aim;
 canvas.addEventListener('mousemove', (e) => {
