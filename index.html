@@ -1075,7 +1075,7 @@ window.addEventListener('mouseup', (e) => { if (e.button === 0) boostHeld = fals
 canvas.addEventListener('wheel', (e) => { if (!started || !$('overlay').hidden) return; e.preventDefault(); S.cruise = clamp(S.cruise - Math.sign(e.deltaY) * 0.05, 0.1, 1); }, { passive: false });
 
 const MODES = {
-  mouse: { name: 'マウス＋WASD', tag: 'おすすめ', help: [['マウス', '向きを変える（見ている方向へ進む）'], ['W / S', '前進・後退'], ['A / D', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['ホイール', 'スピード設定を変える'], ['左クリック（長押し）', 'ブースト'], ['キーを離す', 'その場で止まってホバリング']] },
+  mouse: { name: 'マウス＋WASD', tag: 'おすすめ', help: [['マウス', '向きを変える（見ている方向へ進む）'], ['W / S', '前進・後退'], ['A / D', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['Q / E（またはホイール）', 'スピード設定を上げる・下げる'], ['左クリック（長押し）', 'ブースト'], ['キーを離す', 'その場で止まってホバリング']] },
   easy: { name: 'キーボードのみ', tag: 'マウス不要', help: [['マウス（画面をクリック）', '左右の向きを変える'], ['W / S（または ↑ ↓）', '前進・後退'], ['A / D（または ← →）', '左右に旋回'], ['Q / E', '左右に平行移動'], ['Space / Shift', '上昇・下降'], ['R / F', 'スピード設定を上げる・下げる'], ['キーを離す', 'その場で止まってホバリング']] },
   manual: { name: 'マニュアル', tag: '実機のアングルモード', help: [['W / S（または ↑ ↓）', '前後に傾ける（前進・後退）'], ['A / D（または ← →）', '左右に傾ける（横移動）'], ['Q / E', '機首の向きを回す'], ['Space / Shift', '上昇・下降'], ['キーを離す', '水平に戻る（慣性で少し流れる）']] },
 };
@@ -1099,6 +1099,7 @@ function readInput(dt) {
   const k = (c) => keys.has(c) ? 1 : ((window.__touch && window.__touch[c]) || 0);
   if (window.__touch && window.__touch.on) S.cruise = 1;
   if (mode !== 'mouse') S.cruise = clamp(S.cruise + (k('KeyR') - k('KeyF')) * 0.5 * dt, 0.1, 1);
+  else S.cruise = clamp(S.cruise + (k('KeyQ') - k('KeyE')) * 0.5 * dt, 0.1, 1);     // Q で速く・E で遅く（押している間だけ変わる）
   const cc = droneControls(mode, S, P, H, k, aimDir(_d), $('opt-invert').checked, boostHeld && mode === 'mouse', dt);
   cc.yawRate *= (window.__sens || 1);
   return cc;
@@ -1225,7 +1226,7 @@ function startIntro() {
   intro.on = true; intro.seen = true; intro.t = 0; introShot = -1;
   $('intro-ctl').textContent = window.__isTouch
     ? '操作：画面をなぞって向きを変える／左のレバーでスピード（上で前進）'
-    : '操作：マウスで向き／W・S 前進・後退／Space・Shift 上下／ホイールでスピード';
+    : '操作：マウスで向き／W・S 前進・後退／Space・Shift 上下／Q・E でスピード（Q 速く・E 遅く）';
   $('intro-skip').textContent = window.__isTouch ? 'タップでスキップ' : 'スキップ（Space / クリック）';
   $('intro').hidden = false; document.body.classList.add('intro');
 }
@@ -1895,7 +1896,7 @@ body.touch #players{top:calc(50px + env(safe-area-inset-top,0px));font-size:11px
 
 <script>
 // 古いページがブラウザに残っていたら、最新版を読み直す（更新が届かない問題の対策）
-(() => { const B = '20261023-1900';
+(() => { const B = '20261023-1930';
   fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' }).then((r) => r.text()).then((t) => {
     const m = t.match(/const B = '([^']+)'/); if (!m || m[1] === B) return;
     const q = new URLSearchParams(location.search); if (q.get('v') === m[1]) return; q.set('v', m[1]);
